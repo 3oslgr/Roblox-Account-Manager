@@ -41,13 +41,18 @@
             this.textBox5 = new RBX_Alt_Manager.Classes.BorderedTextBox();
             this.button7 = new System.Windows.Forms.Button();
             this.EmailTip = new System.Windows.Forms.ToolTip(this.components);
-            this.label3 = new System.Windows.Forms.Label();
             this.Username = new RBX_Alt_Manager.Classes.BorderedTextBox();
             this.Block = new System.Windows.Forms.Button();
             this.SetDisplayName = new System.Windows.Forms.Button();
             this.AddFriend = new System.Windows.Forms.Button();
             this.DisplayName = new RBX_Alt_Manager.Classes.BorderedTextBox();
-            this.label4 = new System.Windows.Forms.Label();
+            this.PlayerLayoutTable = new System.Windows.Forms.TableLayoutPanel();
+            this.TargetUsernameLabel = new System.Windows.Forms.Label();
+            this.imageList1 = new System.Windows.Forms.ImageList(this.components);
+            this.OverrideFPSCB = new System.Windows.Forms.CheckBox();
+            this.FPSCapNum = new System.Windows.Forms.NumericUpDown();
+            this.PlayerLayoutTable.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.FPSCapNum)).BeginInit();
             this.SuspendLayout();
             // 
             // WhoFollow
@@ -60,7 +65,7 @@
             "Friends, Followed",
             "Friends",
             "No one"});
-            this.WhoFollow.Location = new System.Drawing.Point(398, 130);
+            this.WhoFollow.Location = new System.Drawing.Point(398, 227);
             this.WhoFollow.Name = "WhoFollow";
             this.WhoFollow.Size = new System.Drawing.Size(108, 21);
             this.WhoFollow.TabIndex = 13;
@@ -153,7 +158,7 @@
             // 
             this.textBox5.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
             this.textBox5.BorderColor = System.Drawing.Color.FromArgb(((int)(((byte)(0)))), ((int)(((byte)(122)))), ((int)(((byte)(122)))), ((int)(((byte)(122)))));
-            this.textBox5.Location = new System.Drawing.Point(283, 130);
+            this.textBox5.Location = new System.Drawing.Point(283, 227);
             this.textBox5.MaxLength = 4;
             this.textBox5.Name = "textBox5";
             this.textBox5.Size = new System.Drawing.Size(52, 20);
@@ -165,7 +170,7 @@
             // button7
             // 
             this.button7.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
-            this.button7.Location = new System.Drawing.Point(341, 129);
+            this.button7.Location = new System.Drawing.Point(341, 226);
             this.button7.Name = "button7";
             this.button7.Size = new System.Drawing.Size(51, 22);
             this.button7.TabIndex = 12;
@@ -183,30 +188,22 @@
             this.EmailTip.UseAnimation = false;
             this.EmailTip.UseFading = false;
             // 
-            // label3
-            // 
-            this.label3.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
-            this.label3.AutoSize = true;
-            this.label3.Location = new System.Drawing.Point(12, 130);
-            this.label3.Name = "label3";
-            this.label3.Size = new System.Drawing.Size(193, 26);
-            this.label3.TabIndex = 1001;
-            this.label3.Text = "The account you have selected on the\r\nalt manager is the account being edited\r\n";
-            // 
             // Username
             // 
             this.Username.BorderColor = System.Drawing.Color.FromArgb(((int)(((byte)(0)))), ((int)(((byte)(122)))), ((int)(((byte)(122)))), ((int)(((byte)(122)))));
-            this.Username.Location = new System.Drawing.Point(106, 79);
+            this.Username.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.Username.Location = new System.Drawing.Point(106, 3);
             this.Username.Name = "Username";
-            this.Username.Size = new System.Drawing.Size(112, 20);
+            this.Username.Size = new System.Drawing.Size(97, 20);
             this.Username.TabIndex = 7;
             // 
             // Block
             // 
-            this.Block.Location = new System.Drawing.Point(83, 101);
-            this.Block.Margin = new System.Windows.Forms.Padding(0);
+            this.Block.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.Block.Location = new System.Drawing.Point(105, 28);
+            this.Block.Margin = new System.Windows.Forms.Padding(2);
             this.Block.Name = "Block";
-            this.Block.Size = new System.Drawing.Size(55, 22);
+            this.Block.Size = new System.Drawing.Size(99, 22);
             this.Block.TabIndex = 8;
             this.Block.Text = "Block";
             this.Block.UseVisualStyleBackColor = true;
@@ -225,10 +222,11 @@
             // 
             // AddFriend
             // 
-            this.AddFriend.Location = new System.Drawing.Point(11, 101);
-            this.AddFriend.Margin = new System.Windows.Forms.Padding(0);
+            this.AddFriend.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.AddFriend.Location = new System.Drawing.Point(2, 28);
+            this.AddFriend.Margin = new System.Windows.Forms.Padding(2);
             this.AddFriend.Name = "AddFriend";
-            this.AddFriend.Size = new System.Drawing.Size(72, 22);
+            this.AddFriend.Size = new System.Drawing.Size(99, 22);
             this.AddFriend.TabIndex = 1004;
             this.AddFriend.Text = "Add Friend";
             this.AddFriend.UseVisualStyleBackColor = true;
@@ -244,27 +242,89 @@
             this.DisplayName.Size = new System.Drawing.Size(168, 20);
             this.DisplayName.TabIndex = 1005;
             // 
-            // label4
+            // PlayerLayoutTable
             // 
-            this.label4.AutoSize = true;
-            this.label4.Location = new System.Drawing.Point(12, 81);
-            this.label4.Name = "label4";
-            this.label4.Size = new System.Drawing.Size(89, 13);
-            this.label4.TabIndex = 1006;
-            this.label4.Text = "Target Username";
+            this.PlayerLayoutTable.ColumnCount = 2;
+            this.PlayerLayoutTable.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 50F));
+            this.PlayerLayoutTable.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 50F));
+            this.PlayerLayoutTable.Controls.Add(this.Block, 1, 1);
+            this.PlayerLayoutTable.Controls.Add(this.AddFriend, 0, 1);
+            this.PlayerLayoutTable.Controls.Add(this.Username, 1, 0);
+            this.PlayerLayoutTable.Controls.Add(this.TargetUsernameLabel, 0, 0);
+            this.PlayerLayoutTable.Location = new System.Drawing.Point(11, 79);
+            this.PlayerLayoutTable.Name = "PlayerLayoutTable";
+            this.PlayerLayoutTable.RowCount = 2;
+            this.PlayerLayoutTable.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 50F));
+            this.PlayerLayoutTable.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 50F));
+            this.PlayerLayoutTable.Size = new System.Drawing.Size(206, 52);
+            this.PlayerLayoutTable.TabIndex = 1007;
+            // 
+            // TargetUsernameLabel
+            // 
+            this.TargetUsernameLabel.AutoSize = true;
+            this.TargetUsernameLabel.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.TargetUsernameLabel.Location = new System.Drawing.Point(3, 0);
+            this.TargetUsernameLabel.Name = "TargetUsernameLabel";
+            this.TargetUsernameLabel.Size = new System.Drawing.Size(97, 26);
+            this.TargetUsernameLabel.TabIndex = 1005;
+            this.TargetUsernameLabel.Text = "Username ";
+            this.TargetUsernameLabel.TextAlign = System.Drawing.ContentAlignment.MiddleRight;
+            // 
+            // imageList1
+            // 
+            this.imageList1.ColorDepth = System.Windows.Forms.ColorDepth.Depth8Bit;
+            this.imageList1.ImageSize = new System.Drawing.Size(16, 16);
+            this.imageList1.TransparentColor = System.Drawing.Color.Transparent;
+            // 
+            // OverrideFPSCB
+            // 
+            this.OverrideFPSCB.AutoSize = true;
+            this.OverrideFPSCB.Location = new System.Drawing.Point(11, 138);
+            this.OverrideFPSCB.Name = "OverrideFPSCB";
+            this.OverrideFPSCB.Size = new System.Drawing.Size(114, 17);
+            this.OverrideFPSCB.TabIndex = 1008;
+            this.OverrideFPSCB.Text = "Override FPS Cap:";
+            this.OverrideFPSCB.UseVisualStyleBackColor = true;
+            this.OverrideFPSCB.CheckedChanged += new System.EventHandler(this.OverrideFPSCB_CheckedChanged);
+            // 
+            // FPSCapNum
+            // 
+            this.FPSCapNum.Increment = new decimal(new int[] {
+            5,
+            0,
+            0,
+            0});
+            this.FPSCapNum.Location = new System.Drawing.Point(125, 137);
+            this.FPSCapNum.Maximum = new decimal(new int[] {
+            10000,
+            0,
+            0,
+            0});
+            this.FPSCapNum.Minimum = new decimal(new int[] {
+            1,
+            0,
+            0,
+            0});
+            this.FPSCapNum.Name = "FPSCapNum";
+            this.FPSCapNum.Size = new System.Drawing.Size(51, 20);
+            this.FPSCapNum.TabIndex = 1009;
+            this.FPSCapNum.Value = new decimal(new int[] {
+            60,
+            0,
+            0,
+            0});
+            this.FPSCapNum.ValueChanged += new System.EventHandler(this.FPSCapNum_ValueChanged);
             // 
             // AccountUtils
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(518, 163);
-            this.Controls.Add(this.AddFriend);
-            this.Controls.Add(this.Block);
-            this.Controls.Add(this.label4);
+            this.ClientSize = new System.Drawing.Size(518, 260);
+            this.Controls.Add(this.FPSCapNum);
+            this.Controls.Add(this.OverrideFPSCB);
+            this.Controls.Add(this.PlayerLayoutTable);
             this.Controls.Add(this.DisplayName);
             this.Controls.Add(this.SetDisplayName);
-            this.Controls.Add(this.Username);
-            this.Controls.Add(this.label3);
             this.Controls.Add(this.button7);
             this.Controls.Add(this.textBox5);
             this.Controls.Add(this.textBox3);
@@ -281,6 +341,9 @@
             this.ShowIcon = false;
             this.Text = " Account Utilities";
             this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.AccountUtils_FormClosing);
+            this.PlayerLayoutTable.ResumeLayout(false);
+            this.PlayerLayoutTable.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.FPSCapNum)).EndInit();
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -300,12 +363,15 @@
         private Classes.BorderedTextBox textBox5;
         private System.Windows.Forms.Button button7;
         private System.Windows.Forms.ToolTip EmailTip;
-        private System.Windows.Forms.Label label3;
         private Classes.BorderedTextBox Username;
         private System.Windows.Forms.Button Block;
         private System.Windows.Forms.Button SetDisplayName;
         private System.Windows.Forms.Button AddFriend;
         private Classes.BorderedTextBox DisplayName;
-        private System.Windows.Forms.Label label4;
+        private System.Windows.Forms.TableLayoutPanel PlayerLayoutTable;
+        private System.Windows.Forms.Label TargetUsernameLabel;
+        private System.Windows.Forms.ImageList imageList1;
+        private System.Windows.Forms.CheckBox OverrideFPSCB;
+        private System.Windows.Forms.NumericUpDown FPSCapNum;
     }
 }

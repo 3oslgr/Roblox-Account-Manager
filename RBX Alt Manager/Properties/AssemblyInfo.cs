@@ -9,7 +9,7 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("ic3")]
 [assembly: AssemblyProduct("Roblox Account Manager")]
-[assembly: AssemblyCopyright("Copyright © ic3 2023")]
+[assembly: AssemblyCopyright("Copyright © ic3 2024")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 
@@ -32,4 +32,4 @@ using System.Runtime.InteropServices;
 // by using the '*' as shown below:
 // [assembly: AssemblyVersion("1.0.*")]
 [assembly: AssemblyVersion("1.0.0.0")]
-[assembly: AssemblyFileVersion("3.6.1.0")]
+[assembly: AssemblyFileVersion("3.7.2.0")]

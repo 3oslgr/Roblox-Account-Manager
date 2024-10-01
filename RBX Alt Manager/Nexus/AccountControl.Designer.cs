@@ -61,6 +61,7 @@ namespace RBX_Alt_Manager.Forms
             this.SaveOutputToFileCheck = new System.Windows.Forms.CheckBox();
             this.ACTabs = new RBX_Alt_Manager.Classes.NBTabControl();
             this.ControlPage = new System.Windows.Forms.TabPage();
+            this.ManualImport = new System.Windows.Forms.Button();
             this.CPanel = new System.Windows.Forms.Panel();
             this.AccountsView = new BrightIdeasSoftware.ObjectListView();
             this.cCheckBoxes = ((BrightIdeasSoftware.OLVColumn)(new BrightIdeasSoftware.OLVColumn()));
@@ -482,6 +483,7 @@ namespace RBX_Alt_Manager.Forms
             // 
             // ControlPage
             // 
+            this.ControlPage.Controls.Add(this.ManualImport);
             this.ControlPage.Controls.Add(this.CPanel);
             this.ControlPage.Controls.Add(this.AccountsView);
             this.ControlPage.Location = new System.Drawing.Point(4, 25);
@@ -491,6 +493,19 @@ namespace RBX_Alt_Manager.Forms
             this.ControlPage.TabIndex = 0;
             this.ControlPage.Text = "Control Panel";
             this.ControlPage.UseVisualStyleBackColor = true;
+            // 
+            // ManualImport
+            // 
+            this.ManualImport.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
+            this.ManualImport.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.ManualImport.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.ManualImport.Location = new System.Drawing.Point(244, 331);
+            this.ManualImport.Name = "ManualImport";
+            this.ManualImport.Size = new System.Drawing.Size(26, 26);
+            this.ManualImport.TabIndex = 3;
+            this.ManualImport.Text = "+";
+            this.ManualImport.UseVisualStyleBackColor = true;
+            this.ManualImport.Click += new System.EventHandler(this.ManualImport_Click);
             // 
             // CPanel
             // 
@@ -1176,5 +1191,6 @@ namespace RBX_Alt_Manager.Forms
         private Label MaxInstanceLabel;
         private NumericUpDown MaxInstancesNum;
         private TableLayoutPanel tableLayoutPanel1;
+        private Button ManualImport;
     }
 }

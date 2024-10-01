@@ -59,7 +59,7 @@ namespace RBX_Alt_Manager.Classes
             }
             catch (Exception exception)
             {
-                Program.Logger.Error($"Couldn't update \"Matches\" dictionary: {exception}");
+                Program.Logger.Error($"[RobloxProcess::UpdateMatches] Couldn't update \"Matches\" dictionary: {exception}");
             }
         }
 
@@ -71,14 +71,14 @@ namespace RBX_Alt_Manager.Classes
 
             RobloxWatcher.LogFileRead += ReadLogFile;
 
-            Task.Run(WaitForLogPath).ContinueWith(task => { if (task.IsFaulted) Program.Logger.Error($"WaitForLogPath Error: {task.Exception}"); });
+            Task.Run(WaitForLogPath).ContinueWith(task => { if (task.IsFaulted) Program.Logger.Error($"[RobloxProcess::ctor] WaitForLogPath Error: {task.Exception}"); });
 
             DisconnectedTime = DateTime.Now.AddSeconds(90);
 
             WaitForExitTimer = new System.Timers.Timer(500);
             WaitForExitTimer.Elapsed += (s, e) =>
             {
-                if (AccountManager.Watcher.Get<bool>(" ExitIfNoConnection") && AccountManager.Watcher.Get<double>("NoConnectionTimeout") is double Timeout && Timeout > 0 && !IsConnected && (DateTime.Now - DisconnectedTime).TotalSeconds is double Seconds && Seconds > Timeout)
+                if (AccountManager.Watcher.Get<bool>("ExitIfNoConnection") && AccountManager.Watcher.Get<double>("NoConnectionTimeout") is double Timeout && Timeout > 0 && !IsConnected && (DateTime.Now - DisconnectedTime).TotalSeconds is double Seconds && Seconds > Timeout)
                     KillProcess($"Lost connection for more than {Seconds} second(s)");
 
                 try
@@ -96,7 +96,7 @@ namespace RBX_Alt_Manager.Classes
                     LogStream?.Dispose();
                     WaitForExitTimer?.Dispose();
                 }
-                catch (Exception x) { Program.Logger.Error($"WaitForExit Error: {x}"); }
+                catch (Exception x) { Program.Logger.Error($"[RobloxProcess::ctor] WaitForExit Error: {x}"); }
             };
             WaitForExitTimer.Start();
         }
@@ -203,7 +203,7 @@ namespace RBX_Alt_Manager.Classes
                     LastPosition = LogStream.Length;
                 }
             }
-            catch (Exception x) { Program.Logger.Error($"An error occured while trying to read LogFile of {RbxProcess.Id}: {x}"); }
+            catch (Exception x) { Program.Logger.Error($"[RobloxProcess::ReadLogFile] An error occured while trying to read LogFile of {RbxProcess.Id}: {x}"); }
         }
 
         private bool KillProcess(string Reason)

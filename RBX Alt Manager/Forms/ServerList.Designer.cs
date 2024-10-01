@@ -59,6 +59,7 @@ namespace RBX_Alt_Manager
             this.Username = new RBX_Alt_Manager.Classes.BorderedTextBox();
             this.Favorite = new System.Windows.Forms.Button();
             this.VerifyDataModelCB = new System.Windows.Forms.CheckBox();
+            this.SaveWindowPositionsCB = new System.Windows.Forms.CheckBox();
             this.WatcherTimer = new System.Windows.Forms.Timer(this.components);
             this.OpenLogsButton = new System.Windows.Forms.Button();
             this.Tabs = new RBX_Alt_Manager.Classes.NBTabControl();
@@ -118,7 +119,6 @@ namespace RBX_Alt_Manager
             this.MBLabel = new System.Windows.Forms.Label();
             this.CloseRbxWindowTitleCB = new System.Windows.Forms.CheckBox();
             this.RbxWindowNameTB = new System.Windows.Forms.TextBox();
-            this.SaveWindowPositionsCB = new System.Windows.Forms.CheckBox();
             this.ServerListStrip.SuspendLayout();
             this.GamesStrip.SuspendLayout();
             this.FavoritesStrip.SuspendLayout();
@@ -164,8 +164,8 @@ namespace RBX_Alt_Manager
             // 
             this.ServerListStrip.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.joinServerToolStripMenuItem,
-            this.copyJobIdToolStripMenuItem,
-            this.loadRegionToolStripMenuItem});
+            this.copyJobIdToolStripMenuItem });
+            // this.loadRegionToolStripMenuItem});
             this.ServerListStrip.Name = "ServerListStrip";
             this.ServerListStrip.Size = new System.Drawing.Size(141, 70);
             // 
@@ -335,6 +335,18 @@ namespace RBX_Alt_Manager
         "app.");
             this.VerifyDataModelCB.UseVisualStyleBackColor = true;
             this.VerifyDataModelCB.CheckedChanged += new System.EventHandler(this.VerifyDataModelCB_CheckedChanged);
+            // 
+            // SaveWindowPositionsCB
+            // 
+            this.SaveWindowPositionsCB.AutoSize = true;
+            this.WatcherPanel.SetFlowBreak(this.SaveWindowPositionsCB, true);
+            this.SaveWindowPositionsCB.Location = new System.Drawing.Point(11, 135);
+            this.SaveWindowPositionsCB.Name = "SaveWindowPositionsCB";
+            this.SaveWindowPositionsCB.Size = new System.Drawing.Size(138, 17);
+            this.SaveWindowPositionsCB.TabIndex = 16;
+            this.SaveWindowPositionsCB.Text = "Save Window Positions";
+            this.SaveWindowPositionsCB.UseVisualStyleBackColor = true;
+            this.SaveWindowPositionsCB.CheckedChanged += new System.EventHandler(this.SaveWindowPositionsCB_CheckedChanged);
             // 
             // WatcherTimer
             // 
@@ -545,6 +557,7 @@ namespace RBX_Alt_Manager
             this.Term.Name = "Term";
             this.Term.Size = new System.Drawing.Size(254, 20);
             this.Term.TabIndex = 7;
+            this.Term.Click += new System.EventHandler(this.Term_Click);
             this.Term.KeyPress += new System.Windows.Forms.KeyPressEventHandler(this.Term_KeyPress);
             // 
             // GameListPanel
@@ -1074,21 +1087,6 @@ namespace RBX_Alt_Manager
             this.RbxWindowNameTB.TabIndex = 12;
             this.RbxWindowNameTB.Text = "Roblox";
             this.RbxWindowNameTB.TextChanged += new System.EventHandler(this.RbxWindowNameTB_TextChanged);
-            // 
-            // SaveWindowPositionsCB
-            // 
-            this.SaveWindowPositionsCB.AutoSize = true;
-            this.WatcherPanel.SetFlowBreak(this.SaveWindowPositionsCB, true);
-            this.SaveWindowPositionsCB.Location = new System.Drawing.Point(11, 135);
-            this.SaveWindowPositionsCB.Name = "SaveWindowPositionsCB";
-            this.SaveWindowPositionsCB.Size = new System.Drawing.Size(138, 17);
-            this.SaveWindowPositionsCB.TabIndex = 16;
-            this.SaveWindowPositionsCB.Text = "Save Window Positions";
-            this.OPITip.SetToolTip(this.SaveWindowPositionsCB, "Verifies that the closing signal is valid.\r\nThis was added because games can prin" +
-        "t anything to roblox\'s logs including the text RAM scans for to detect the beta " +
-        "app.");
-            this.SaveWindowPositionsCB.UseVisualStyleBackColor = true;
-            this.SaveWindowPositionsCB.CheckedChanged += new System.EventHandler(this.SaveWindowPositionsCB_CheckedChanged);
             // 
             // ServerList
             // 

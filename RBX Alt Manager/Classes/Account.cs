@@ -9,7 +9,6 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net;
-using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Web;
@@ -30,14 +29,12 @@ namespace RBX_Alt_Manager
         public long UserID;
         public Dictionary<string, string> Fields = new Dictionary<string, string>();
         public DateTime LastAttemptedRefresh;
+        public string Region; // Used to prevent bad refreshes which invalidates the account, I lost like 50 logged in accounts when I used a VPN set to Netherlands
         [JsonIgnore] public DateTime PinUnlocked;
         [JsonIgnore] public DateTime TokenSet;
         [JsonIgnore] public DateTime LastAppLaunch;
         [JsonIgnore] public string CSRFToken;
         [JsonIgnore] public UserPresence Presence;
-
-        [DllImport("user32.dll", SetLastError = true)]
-        static extern bool MoveWindow(IntPtr hWnd, int X, int Y, int nWidth, int nHeight, bool bRepaint);
 
         public int CompareTo(Account compareTo)
         {
@@ -104,8 +101,17 @@ namespace RBX_Alt_Manager
                 LastUse = DateTime.Now;
 
                 AccountManager.LastValidAccount = this;
+
+                UpdateRegion();
             }
         }
+
+        public void UpdateRegion() =>
+            Utilities.GetRegion().ContinueWith(t =>
+            {
+                if (t.IsCompleted && !string.IsNullOrEmpty(t.Result))
+                    Region = t.Result;
+            });
 
         public RestRequest MakeRequest(string url, Method method = Method.Get) => new RestRequest(url, method).AddCookie(".ROBLOSECURITY", SecurityToken, "/", ".roblox.com");
 
@@ -115,7 +121,7 @@ namespace RBX_Alt_Manager
 
             if (!GetCSRFToken(out string Token)) return false;
 
-            RestRequest request = MakeRequest("/v1/authentication-ticket/", Method.Post).AddHeader("X-CSRF-TOKEN", Token).AddHeader("Referer", "https://www.roblox.com/games/4924922222/Brookhaven-RP");
+            RestRequest request = MakeRequest("/v1/authentication-ticket/", Method.Post).AddHeader("x-csrf-token", Token).AddHeader("Referer", "https://www.roblox.com/games/2753915549/Blox-Fruits").AddJsonBody(string.Empty);
 
             RestResponse response = AccountManager.AuthClient.Execute(request);
 
@@ -133,7 +139,9 @@ namespace RBX_Alt_Manager
 
         public bool GetCSRFToken(out string Result)
         {
-            RestRequest request = MakeRequest("v1/authentication-ticket/", Method.Post).AddHeader("Referer", "https://www.roblox.com/games/4924922222/Brookhaven-RP");
+            if (string.IsNullOrEmpty(Region)) UpdateRegion();
+
+            RestRequest request = MakeRequest("/v1/authentication-ticket/", Method.Post).AddHeader("Referer", "https://www.roblox.com/games/2753915549/Blox-Fruits");
 
             RestResponse response = AccountManager.AuthClient.Execute(request);
 
@@ -167,7 +175,7 @@ namespace RBX_Alt_Manager
         {
             if (!GetCSRFToken(out _))
             {
-                if (!Internal) MessageBox.Show("Invalid Account Session!", "Account Manager", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                if (!Internal) MessageBox.Show("Invalid Account Session!", Username, MessageBoxButtons.OK, MessageBoxIcon.Error);
 
                 return false;
             }
@@ -186,7 +194,7 @@ namespace RBX_Alt_Manager
                 if (!pinInfo["isEnabled"].Value<bool>() || (pinInfo["unlockedUntil"].Type != JTokenType.Null && pinInfo["unlockedUntil"].Value<int>() > 0)) return true;
             }
 
-            if (!Internal) MessageBox.Show("Pin required!", "Account Manager", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            if (!Internal) MessageBox.Show("Pin required!", Username, MessageBoxButtons.OK, MessageBoxIcon.Error);
 
             return false;
         }
@@ -210,12 +218,12 @@ namespace RBX_Alt_Manager
             {
                 JObject pinInfo = JObject.Parse(response.Content);
 
-                if (pinInfo["isEnabled"].Value<bool>() && pinInfo["unlockedUntil"].Value<int>() > 0)
+                if (pinInfo["unlockedUntil"]?.Value<int>() > 0)
                     PinUnlocked = DateTime.Now.AddSeconds(pinInfo["unlockedUntil"].Value<int>());
 
                 if (PinUnlocked > DateTime.Now)
                 {
-                    MessageBox.Show("Pin unlocked for 5 minutes", "Account Manager", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    MessageBox.Show("Pin unlocked for 5 minutes", Username, MessageBoxButtons.OK, MessageBoxIcon.Information);
 
                     return true;
                 }
@@ -321,14 +329,14 @@ namespace RBX_Alt_Manager
                     AccountManager.SaveAccounts();
                 }
                 else
-                    MessageBox.Show("An error occured while changing passwords, you will need to re-login with your new password!", "Account Manager", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    MessageBox.Show("An error occured while changing passwords, you will need to re-login with your new password!", Username, MessageBoxButtons.OK, MessageBoxIcon.Error);
 
-                MessageBox.Show("Password changed!", "Account Manager", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                MessageBox.Show("Password changed!", Username, MessageBoxButtons.OK, MessageBoxIcon.Information);
 
                 return true;
             }
 
-            MessageBox.Show("Failed to change password!", "Account Manager", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            MessageBox.Show("Failed to change password!", Username, MessageBoxButtons.OK, MessageBoxIcon.Error);
 
             return false;
         }
@@ -349,12 +357,12 @@ namespace RBX_Alt_Manager
 
             if (response.IsSuccessful && response.StatusCode == HttpStatusCode.OK)
             {
-                MessageBox.Show("Email changed!", "Account Manager", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                MessageBox.Show("Email changed!", Username, MessageBoxButtons.OK, MessageBoxIcon.Information);
 
                 return true;
             }
 
-            MessageBox.Show("Failed to change email, maybe your password is incorrect!", "Account Manager", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            MessageBox.Show($"Failed to change email, maybe your password is incorrect!\n\n[{response.StatusCode}] {response.Content}", Username, MessageBoxButtons.OK, MessageBoxIcon.Error);
 
             return false;
         }
@@ -373,6 +381,8 @@ namespace RBX_Alt_Manager
 
             if (response.IsSuccessful && response.StatusCode == HttpStatusCode.OK)
             {
+                UpdateRegion();
+
                 var SToken = response.Cookies[".ROBLOSECURITY"];
 
                 if (SToken != null)
@@ -381,14 +391,14 @@ namespace RBX_Alt_Manager
                     AccountManager.SaveAccounts(true);
                 }
                 else if (!Internal)
-                    MessageBox.Show("An error occured, you will need to re-login!", "Account Manager", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    MessageBox.Show("An error occured, you will need to re-login!", Username, MessageBoxButtons.OK, MessageBoxIcon.Error);
 
-                if (!Internal) MessageBox.Show("Signed out of all other sessions!", "Account Manager", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                if (!Internal) MessageBox.Show("Signed out of all other sessions!", Username, MessageBoxButtons.OK, MessageBoxIcon.Information);
 
                 return true;
             }
 
-            if (!Internal) MessageBox.Show("Failed to log out of other sessions!", "Account Manager", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            if (!Internal) MessageBox.Show("Failed to log out of other sessions!", Username, MessageBoxButtons.OK, MessageBoxIcon.Error);
 
             return false;
         }
@@ -511,7 +521,7 @@ namespace RBX_Alt_Manager
                 BrowserTrackerID = r.Next(100000, 175000).ToString() + r.Next(100000, 900000).ToString(); // oh god this is ugly
             }
 
-            try { ClientSettingsPatcher.PatchSettings(); } catch (Exception Ex) { Program.Logger.Error($"Failed to patch ClientAppSettings: {Ex}"); }
+            try { ClientSettingsPatcher.PatchSettings(this); } catch (Exception Ex) { Program.Logger.Error($"[Account::JoinServer] Failed to patch ClientAppSettings: {Ex}"); }
 
             if (!GetCSRFToken(out string Token)) return $"ERROR: Account Session Expired, re-add the account or try again. (Invalid X-CSRF-Token)\n{Token}";
 
@@ -543,39 +553,58 @@ namespace RBX_Alt_Manager
                             }
                         }
                     }
-                    catch (Exception x) { Program.Logger.Error($"An error occured attempting to close {Username}'s last process(es): {x}"); }
+                    catch (Exception x) { Program.Logger.Error($"[Account::JoinServer] An error occured attempting to close {Username}'s last process(es): {x}"); }
                 }
 
-                string LinkCode = string.IsNullOrEmpty(JobID) ? string.Empty : Regex.Match(JobID, "privateServerLinkCode=(.+)")?.Groups[1]?.Value;
                 string AccessCode = JobID;
+                string LinkCode = string.Empty;
 
-                if (!string.IsNullOrEmpty(LinkCode))
+                if (Uri.TryCreate(JobID, UriKind.Absolute, out Uri Link))
                 {
-                    RestRequest request = MakeRequest(string.Format("/games/{0}?privateServerLinkCode={1}", PlaceID, LinkCode), Method.Get).AddHeader("X-CSRF-TOKEN", Token).AddHeader("Referer", "https://www.roblox.com/games/4924922222/Brookhaven-RP");
+                    var QueryParams = HttpUtility.ParseQueryString(Link.Query);
 
-                    RestResponse response = await AccountManager.MainClient.ExecuteAsync(request);
-
-                    if (response.StatusCode == HttpStatusCode.OK)
+                    if (Link.AbsolutePath.Contains("/share") && QueryParams["code"] is string Code)
                     {
-                        if (ParseAccessCode(response, out string Code))
+                        string LinkType = QueryParams["type"] ?? "Server";
+
+                        var Request = MakeRequest("sharelinks/v1/resolve-link").AddCookie("RBXEventTrackerV2", $"rbxid=0&browserid=1", "/", ".roblox.com").AddHeader("X-CSRF-TOKEN", Token).AddJsonBody(new { linkId = Code, linkType = LinkType });
+                        using var API = new RestClient("https://apis.roblox.com/");
+                        var Response = await API.ExecutePostAsync(Request);
+
+                        if (Response.IsSuccessful && Response.Content.TryParseJson(out dynamic Info))
                         {
-                            JoinVIP = true;
-                            AccessCode = Code;
+                            if (Info.privateServerInviteData != null && Info.privateServerInviteData?.status == "Valid")
+                            {
+                                QueryParams["privateServerLinkCode"] = (string)Info.privateServerInviteData.linkCode;
+                                PlaceID = Info.privateServerInviteData.placeId;
+                                JobID = $"https://www.roblox.com/games/{PlaceID}?privateServerLinkCode={Info.privateServerInviteData.linkCode as string}";
+                            }
+                            else if (Info.experienceInviteData != null && (string)Info.experienceInviteData?.status == "Valid")
+                            {
+                                PlaceID = Info.experienceInviteData.placeId;
+                                JobID = Info.experienceInviteData.instanceId;
+                            }
                         }
                     }
-                    else if (response.StatusCode == HttpStatusCode.Redirect) // thx wally (p.s. i hate wally)
+
+                    if (QueryParams["privateServerLinkCode"] is string)
                     {
-                        request = MakeRequest(string.Format("/games/{0}?privateServerLinkCode={1}", PlaceID, LinkCode), Method.Get).AddHeader("X-CSRF-TOKEN", Token).AddHeader("Referer", "https://www.roblox.com/games/4924922222/Brookhaven-RP");
+                        LinkCode = QueryParams["privateServerLinkCode"];
 
-                        RestResponse result = await AccountManager.Web13Client.ExecuteAsync(request);
+                        RestRequest request = MakeRequest(string.Format("/games/{0}?privateServerLinkCode={1}", PlaceID, LinkCode), Method.Get).AddHeader("X-CSRF-TOKEN", Token).AddHeader("Referer", Link.OriginalString);
 
-                        if (result.StatusCode == HttpStatusCode.OK)
+                        RestResponse response = await AccountManager.MainClient.ExecuteAsync(request);
+
+                        if (response.StatusCode == HttpStatusCode.OK && ParseAccessCode(response, out AccessCode))
+                            JoinVIP = true;
+                        else if (response.StatusCode == HttpStatusCode.Redirect) // thx wally (p.s. i hate wally)
                         {
-                            if (ParseAccessCode(response, out string Code))
-                            {
+                            request = MakeRequest(string.Format("/games/{0}?privateServerLinkCode={1}", PlaceID, LinkCode), Method.Get).AddHeader("X-CSRF-TOKEN", Token).AddHeader("Referer", Link.OriginalString);
+
+                            RestResponse result = await AccountManager.Web13Client.ExecuteAsync(request);
+
+                            if (result.StatusCode == HttpStatusCode.OK && ParseAccessCode(response, out AccessCode))
                                 JoinVIP = true;
-                                AccessCode = Code;
-                            }
                         }
                     }
                 }
@@ -610,30 +639,52 @@ namespace RBX_Alt_Manager
 
                 double LaunchTime = Math.Floor((DateTime.UtcNow - new DateTime(1970, 1, 1)).TotalSeconds * 1000);
 
-                if (AccountManager.UseOldJoin)
+                if (UWPInstanceManager.Exists && UWPInstanceManager.UserInstances.TryGetValue(Username.Replace('_', '-'), out UserInstance Instance))
                 {
+                    UWPInstanceManager.SetPTA(Instance.AppID, "roblox");
+
+                    if (JoinVIP)
+                        Process.Start(new ProcessStartInfo { FileName = "cmd", Arguments = $"/c start roblox://placeId={PlaceID}^&accessCode={AccessCode}^&linkCode={LinkCode}", CreateNoWindow = true });
+                    else if (FollowUser)
+                        Process.Start(new ProcessStartInfo { FileName = "cmd", Arguments = $"/c start roblox://userID={PlaceID}", CreateNoWindow = true });
+                    else
+                        Process.Start(new ProcessStartInfo { FileName = "cmd", Arguments = $"/c start roblox://placeId={PlaceID}&gameInstanceId={JobID}", CreateNoWindow = true });
+
+                    return "Success";
+                }
+                else if (AccountManager.UseOldJoin)
+                {
+                    // TODO: Scan for other versions instead of always using LIVE channel
+                    
                     string RPath = @"C:\Program Files (x86)\Roblox\Versions\" + AccountManager.CurrentVersion;
 
                     if (!Directory.Exists(RPath))
                         RPath = Path.Combine(Environment.GetEnvironmentVariable("LocalAppData"), @"Roblox\Versions\" + AccountManager.CurrentVersion);
 
                     if (!Directory.Exists(RPath))
-                        return "ERROR: Failed to find ROBLOX executable";
+                        return "ERROR: Failed to find ROBLOX directory";
 
                     RPath += @"\RobloxPlayerBeta.exe";
 
-                    AccountManager.Instance.NextAccount();
+                    if (!File.Exists(RPath))
+                        return "ERROR: Failed to find ROBLOX executable";
 
                     await Task.Run(() =>
                     {
-                        ProcessStartInfo Roblox = new ProcessStartInfo(RPath);
-                        
-                        if (JoinVIP)
-                            Roblox.Arguments = string.Format("--app -t {0} -j \"https://assetgame.roblox.com/game/PlaceLauncher.ashx?request=RequestPrivateGame&placeId={1}&accessCode={2}&linkCode={3}\"", Ticket, PlaceID, AccessCode, LinkCode);
-                        else if (FollowUser)
-                            Roblox.Arguments = string.Format("--app -t {0} -j \"https://assetgame.roblox.com/game/PlaceLauncher.ashx?request=RequestFollowUser&userId={1}\"", Ticket, PlaceID);
-                        else
-                            Roblox.Arguments = string.Format("--app -t {0} -j \"https://assetgame.roblox.com/game/PlaceLauncher.ashx?request=RequestGame{3}&placeId={1}{2}&isPlayTogetherGame=false\"", Ticket, PlaceID, "&gameId=" + JobID, string.IsNullOrEmpty(JobID) ? "" : "Job");
+                        try
+                        {
+                            ProcessStartInfo Roblox = new ProcessStartInfo(RPath);
+
+                            if (JoinVIP)
+                                Roblox.Arguments = $"roblox-player:1+launchmode:play+gameinfo:{Ticket}+launchtime:{LaunchTime}+placelauncherurl:{HttpUtility.UrlEncode($"https://assetgame.roblox.com/game/PlaceLauncher.ashx?request=RequestPrivateGame&placeId={PlaceID}&accessCode={AccessCode}&linkCode={LinkCode}")}+browsertrackerid:{BrowserTrackerID}+robloxLocale:en_us+gameLocale:en_us+channel:+LaunchExp:InApp";
+                            else if (FollowUser)
+                                Roblox.Arguments = $"roblox-player:1+launchmode:play+gameinfo:{Ticket}+launchtime:{LaunchTime}+placelauncherurl:{HttpUtility.UrlEncode($"https://assetgame.roblox.com/game/PlaceLauncher.ashx?request=RequestFollowUser&userId={PlaceID}")}+browsertrackerid:{BrowserTrackerID}+robloxLocale:en_us+gameLocale:en_us+channel:+LaunchExp:InApp";
+                            else
+                                Roblox.Arguments = $"roblox-player:1+launchmode:play+gameinfo:{Ticket}+launchtime:{LaunchTime}+placelauncherurl:{HttpUtility.UrlEncode($"https://assetgame.roblox.com/game/PlaceLauncher.ashx?request=RequestGame{(string.IsNullOrEmpty(JobID) ? "" : "Job")}&browserTrackerId={BrowserTrackerID}&placeId={PlaceID}{(string.IsNullOrEmpty(JobID) ? "" : ("&gameId=" + JobID))}&isPlayTogetherGame=false{(AccountManager.IsTeleport ? "&isTeleport=true" : "")}")}+browsertrackerid:{BrowserTrackerID}+robloxLocale:en_us+gameLocale:en_us+channel:+LaunchExp:InApp";
+
+                            Process.Start(Roblox);
+                        }
+                        catch (Exception x) { Program.Logger.Error($"[Account::JoinServer] Failed to start ROBLOX: {x}"); }
                     });
 
                     _ = Task.Run(AdjustWindowPosition);
@@ -654,11 +705,8 @@ namespace RBX_Alt_Manager
                                 LaunchInfo.FileName = $"roblox-player:1+launchmode:play+gameinfo:{Ticket}+launchtime:{LaunchTime}+placelauncherurl:{HttpUtility.UrlEncode($"https://assetgame.roblox.com/game/PlaceLauncher.ashx?request=RequestFollowUser&userId={PlaceID}")}+browsertrackerid:{BrowserTrackerID}+robloxLocale:en_us+gameLocale:en_us+channel:+LaunchExp:InApp";
                             else
                                 LaunchInfo.FileName = $"roblox-player:1+launchmode:play+gameinfo:{Ticket}+launchtime:{LaunchTime}+placelauncherurl:{HttpUtility.UrlEncode($"https://assetgame.roblox.com/game/PlaceLauncher.ashx?request=RequestGame{(string.IsNullOrEmpty(JobID) ? "" : "Job")}&browserTrackerId={BrowserTrackerID}&placeId={PlaceID}{(string.IsNullOrEmpty(JobID) ? "" : ("&gameId=" + JobID))}&isPlayTogetherGame=false{(AccountManager.IsTeleport ? "&isTeleport=true" : "")}")}+browsertrackerid:{BrowserTrackerID}+robloxLocale:en_us+gameLocale:en_us+channel:+LaunchExp:InApp";
-                            Process Launcher = Process.Start(LaunchInfo);
                             
-                            Launcher.WaitForExit();
-
-                            AccountManager.Instance.NextAccount();
+                            Process Launcher = Process.Start(LaunchInfo);
 
                             _ = Task.Run(AdjustWindowPosition);
                         }
@@ -666,7 +714,6 @@ namespace RBX_Alt_Manager
                         {
                             Utilities.InvokeIfRequired(AccountManager.Instance, () => MessageBox.Show($"ERROR: Failed to launch Roblox! Try re-installing Roblox.\n\n{x.Message}{x.StackTrace}", "Roblox Account Manager", MessageBoxButtons.OK, MessageBoxIcon.Error));
                             AccountManager.Instance.CancelLaunching();
-                            AccountManager.Instance.NextAccount();
                         }
                     });
 
@@ -705,7 +752,7 @@ namespace RBX_Alt_Manager
 
                     Found = true;
 
-                    MoveWindow(process.MainWindowHandle, PosX, PosY, Width, Height, true);
+                    Natives.MoveWindow(process.MainWindowHandle, PosX, PosY, Width, Height, true);
 
                     break;
                 }
@@ -743,7 +790,7 @@ namespace RBX_Alt_Manager
             if (!AccountManager.GetUserID(Username, out long UserId, out _)) return false;
             if (!GetCSRFToken(out string Token)) return false;
 
-            RestRequest friendRequest = MakeRequest($"/v1/users/{UserId}/request-friendship", Method.Post).AddHeader("X-CSRF-TOKEN", Token);
+            RestRequest friendRequest = MakeRequest($"/v1/users/{UserId}/request-friendship", Method.Post).AddHeader("X-CSRF-TOKEN", Token).AddJsonBody(string.Empty);
 
             RestResponse friendResponse = AccountManager.FriendsClient.Execute(friendRequest);
 
@@ -825,6 +872,7 @@ namespace RBX_Alt_Manager
             return false;
         }
 
+        public bool HasField(string Name) => Fields.ContainsKey(Name);
         public string GetField(string Name) => Fields.ContainsKey(Name) ? Fields[Name] : string.Empty;
         public void SetField(string Name, string Value) { Fields[Name] = Value; AccountManager.SaveAccounts(); }
         public void RemoveField(string Name) { Fields.Remove(Name); AccountManager.SaveAccounts(); }

@@ -1,4 +1,6 @@
 ﻿using IWshRuntimeLibrary;
+using RBX_Alt_Manager;
+using RBX_Alt_Manager.Classes;
 using System;
 using System.Diagnostics;
 using System.IO;
@@ -20,7 +22,7 @@ namespace Auto_Update
         }
 
         private string FileName = "Update.zip";
-        private readonly string UpdatePath = Path.Combine(Environment.CurrentDirectory, "Update");
+        private readonly string UpdatePath = Path.Combine(Program.DataDirectory.FullName, "Update");
         private long TotalDownloadSize = 0;
         private delegate void SafeCallDelegateSetProgress(int Progress);
         private delegate void SafeCallDelegateSetStatus(string Text);
@@ -121,23 +123,23 @@ namespace Auto_Update
             {
                 using ZipArchive archive = ZipFile.OpenRead(FileName);
                 archive.ExtractToDirectory(UpdatePath);
-                bool OldExecutableExists = File.Exists(Path.Combine(Environment.CurrentDirectory, "RBX Alt Manager.exe"));
+                bool OldExecutableExists = File.Exists(Path.Combine(AppContext.BaseDirectory, "RBX Alt Manager.exe"));
 
                 foreach (string s in Directory.GetFiles(UpdatePath))
                 {
-                    string FN = Path.Combine(Environment.CurrentDirectory, Path.GetFileName(s));
+                    string FN = Path.Combine(AppContext.BaseDirectory, Path.GetFileName(s));
 
 #if DEBUG
-                    if (FN == Application.ExecutablePath) FN = Path.Combine(Environment.CurrentDirectory, "Test.exe");
+                    if (FN == Application.ExecutablePath) FN = Path.Combine(AppContext.BaseDirectory, "Test.exe");
 #endif
 
-                    if (File.Exists(Path.Combine(Environment.CurrentDirectory, FN)))
-                        File.Delete(Path.Combine(Environment.CurrentDirectory, FN));
+                    if (File.Exists(Path.Combine(AppContext.BaseDirectory, FN)))
+                        File.Delete(Path.Combine(AppContext.BaseDirectory, FN));
                 }
 
                 foreach (string s in Directory.GetDirectories(UpdatePath))
                 {
-                    DirectoryInfo dir = new DirectoryInfo(Path.Combine(Environment.CurrentDirectory, Path.GetFileName(s)));
+                    DirectoryInfo dir = new DirectoryInfo(Path.Combine(AppContext.BaseDirectory, Path.GetFileName(s)));
 
                     if (dir.Exists)
                         dir.RecursiveDelete();
@@ -148,16 +150,16 @@ namespace Auto_Update
                 foreach (FileInfo file in UpdateDir.GetFiles())
                     if (file.Name != Current.Name)
                         if (file.Name != "RBX Alt Manager.exe" || (file.Name == "RBX Alt Manager.exe" && OldExecutableExists)) // allows old shortcuts to keep working
-                            file.MoveTo(Path.Combine(Environment.CurrentDirectory, file.Name));
+                            file.MoveTo(Path.Combine(AppContext.BaseDirectory, file.Name));
 
                 foreach (DirectoryInfo dir in UpdateDir.GetDirectories())
                 {
-                    dir.MoveTo(Path.Combine(Environment.CurrentDirectory, dir.Name));
+                    dir.MoveTo(Path.Combine(AppContext.BaseDirectory, dir.Name));
 
                     foreach (FileInfo file in dir.GetFiles()) // remove old files from main directory
                     {
-                        if (File.Exists(Path.Combine(Environment.CurrentDirectory, file.Name)))
-                            File.Delete(Path.Combine(Environment.CurrentDirectory, file.Name));
+                        if (File.Exists(Path.Combine(AppContext.BaseDirectory, file.Name)))
+                            File.Delete(Path.Combine(AppContext.BaseDirectory, file.Name));
                     }
                 }
 
@@ -192,7 +194,7 @@ namespace Auto_Update
             File.Delete(FileName);
 #endif
 
-            string ProgramFN = Path.Combine(Environment.CurrentDirectory, "Roblox Account Manager.exe");
+            string ProgramFN = Path.Combine(AppContext.BaseDirectory, "Roblox Account Manager.exe");
 
             if (RBX_Alt_Manager.Program.Elevated)
             {
@@ -227,45 +229,45 @@ namespace Auto_Update
 
             // To start process as shell user you will need to carry out these steps:
             // 1. Enable the SeIncreaseQuotaPrivilege in your current token
-            // 2. Get an HWND representing the desktop shell (GetShellWindow)
-            // 3. Get the Process ID(PID) of the process associated with that window(GetWindowThreadProcessId)
-            // 4. Open that process(OpenProcess)
-            // 5. Get the access token from that process (OpenProcessToken)
-            // 6. Make a primary token with that token(DuplicateTokenEx)
-            // 7. Start the new process with that primary token(CreateProcessWithTokenW)
+            // 2. Get an HWND representing the desktop shell (Natives.GetShellWindow)
+            // 3. Get the Process ID(PID) of the process associated with that window(Natives.GetWindowThreadProcessId)
+            // 4. Open that process(Natives.OpenProcess)
+            // 5. Get the access token from that process (Natives.OpenProcessToken)
+            // 6. Make a primary token with that token(Natives.DuplicateTokenEx)
+            // 7. Start the new process with that primary token(Natives.CreateProcessWithTokenW)
 
             var hProcessToken = IntPtr.Zero;
             // Enable SeIncreaseQuotaPrivilege in this process.  (This won't work if current process is not elevated.)
             try
             {
-                var process = GetCurrentProcess();
-                if (!OpenProcessToken(process, 0x0020, ref hProcessToken))
+                var process = Natives.GetCurrentProcess();
+                if (!Natives.OpenProcessToken(process, 0x0020, ref hProcessToken))
                     return;
 
-                var tkp = new TOKEN_PRIVILEGES
+                var tkp = new Natives.TOKEN_PRIVILEGES
                 {
                     PrivilegeCount = 1,
-                    Privileges = new LUID_AND_ATTRIBUTES[1]
+                    Privileges = new Natives.LUID_AND_ATTRIBUTES[1]
                 };
 
-                if (!LookupPrivilegeValue(null, "SeIncreaseQuotaPrivilege", ref tkp.Privileges[0].Luid))
+                if (!Natives.LookupPrivilegeValue(null, "SeIncreaseQuotaPrivilege", ref tkp.Privileges[0].Luid))
                     return;
 
                 tkp.Privileges[0].Attributes = 0x00000002;
 
-                if (!AdjustTokenPrivileges(hProcessToken, false, ref tkp, 0, IntPtr.Zero, IntPtr.Zero))
+                if (!Natives.AdjustTokenPrivileges(hProcessToken, false, ref tkp, 0, IntPtr.Zero, IntPtr.Zero))
                     return;
             }
             finally
             {
-                CloseHandle(hProcessToken);
+                Natives.CloseHandle(hProcessToken);
             }
 
             // Get an HWND representing the desktop shell.
             // CAVEATS:  This will fail if the shell is not running (crashed or terminated), or the default shell has been
             // replaced with a custom shell.  This also won't return what you probably want if Explorer has been terminated and
             // restarted elevated.
-            var hwnd = GetShellWindow();
+            var hwnd = Natives.GetShellWindow();
             if (hwnd == IntPtr.Zero)
                 return;
 
@@ -275,158 +277,37 @@ namespace Auto_Update
             try
             {
                 // Get the PID of the desktop shell process.
-                if (GetWindowThreadProcessId(hwnd, out uint dwPID) == 0)
+                if (Natives.GetWindowThreadProcessId(hwnd, out uint dwPID) == 0)
                     return;
 
                 // Open the desktop shell process in order to query it (get the token)
-                hShellProcess = OpenProcess(ProcessAccessFlags.QueryInformation, false, dwPID);
+                hShellProcess = Natives.OpenProcess(Natives.ProcessAccessFlags.QueryInformation, false, dwPID);
                 if (hShellProcess == IntPtr.Zero)
                     return;
 
                 // Get the process token of the desktop shell.
-                if (!OpenProcessToken(hShellProcess, 0x0002, ref hShellProcessToken))
+                if (!Natives.OpenProcessToken(hShellProcess, 0x0002, ref hShellProcessToken))
                     return;
 
                 var dwTokenRights = 395U;
 
                 // Duplicate the shell's process token to get a primary token.
-                // Based on experimentation, this is the minimal set of rights required for CreateProcessWithTokenW (contrary to current documentation).
-                if (!DuplicateTokenEx(hShellProcessToken, dwTokenRights, IntPtr.Zero, SECURITY_IMPERSONATION_LEVEL.SecurityImpersonation, TOKEN_TYPE.TokenPrimary, out hPrimaryToken))
+                // Based on experimentation, this is the minimal set of rights required for Natives.CreateProcessWithTokenW (contrary to current documentation).
+                if (!Natives.DuplicateTokenEx(hShellProcessToken, dwTokenRights, IntPtr.Zero, Natives.SECURITY_IMPERSONATION_LEVEL.SecurityImpersonation, Natives.TOKEN_TYPE.TokenPrimary, out hPrimaryToken))
                     return;
 
                 // Start the target process with the new token.
-                var si = new STARTUPINFO();
-                var pi = new PROCESS_INFORMATION();
-                if (!CreateProcessWithTokenW(hPrimaryToken, 0, fileName, "", 0, IntPtr.Zero, Path.GetDirectoryName(fileName), ref si, out pi))
+                var si = new Natives.STARTUPINFO();
+                var pi = new Natives.PROCESS_INFORMATION();
+                if (!Natives.CreateProcessWithTokenW(hPrimaryToken, 0, fileName, "", 0, IntPtr.Zero, Path.GetDirectoryName(fileName), ref si, out pi))
                     return;
             }
             finally
             {
-                CloseHandle(hShellProcessToken);
-                CloseHandle(hPrimaryToken);
-                CloseHandle(hShellProcess);
+                Natives.CloseHandle(hShellProcessToken);
+                Natives.CloseHandle(hPrimaryToken);
+                Natives.CloseHandle(hShellProcess);
             }
         }
-
-        #region Interop
-
-        private struct TOKEN_PRIVILEGES
-        {
-            public UInt32 PrivilegeCount;
-            [MarshalAs(UnmanagedType.ByValArray, SizeConst = 1)]
-            public LUID_AND_ATTRIBUTES[] Privileges;
-        }
-
-        [StructLayout(LayoutKind.Sequential, Pack = 4)]
-        private struct LUID_AND_ATTRIBUTES
-        {
-            public LUID Luid;
-            public UInt32 Attributes;
-        }
-
-        [StructLayout(LayoutKind.Sequential)]
-        private struct LUID
-        {
-            public uint LowPart;
-            public int HighPart;
-        }
-
-        [Flags]
-        private enum ProcessAccessFlags : uint
-        {
-            All = 0x001F0FFF,
-            Terminate = 0x00000001,
-            CreateThread = 0x00000002,
-            VirtualMemoryOperation = 0x00000008,
-            VirtualMemoryRead = 0x00000010,
-            VirtualMemoryWrite = 0x00000020,
-            DuplicateHandle = 0x00000040,
-            CreateProcess = 0x000000080,
-            SetQuota = 0x00000100,
-            SetInformation = 0x00000200,
-            QueryInformation = 0x00000400,
-            QueryLimitedInformation = 0x00001000,
-            Synchronize = 0x00100000
-        }
-
-        private enum SECURITY_IMPERSONATION_LEVEL
-        {
-            SecurityAnonymous,
-            SecurityIdentification,
-            SecurityImpersonation,
-            SecurityDelegation
-        }
-
-        private enum TOKEN_TYPE
-        {
-            TokenPrimary = 1,
-            TokenImpersonation
-        }
-
-        [StructLayout(LayoutKind.Sequential)]
-        private struct PROCESS_INFORMATION
-        {
-            public IntPtr hProcess;
-            public IntPtr hThread;
-            public int dwProcessId;
-            public int dwThreadId;
-        }
-
-        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
-        private struct STARTUPINFO
-        {
-            public Int32 cb;
-            public string lpReserved;
-            public string lpDesktop;
-            public string lpTitle;
-            public Int32 dwX;
-            public Int32 dwY;
-            public Int32 dwXSize;
-            public Int32 dwYSize;
-            public Int32 dwXCountChars;
-            public Int32 dwYCountChars;
-            public Int32 dwFillAttribute;
-            public Int32 dwFlags;
-            public Int16 wShowWindow;
-            public Int16 cbReserved2;
-            public IntPtr lpReserved2;
-            public IntPtr hStdInput;
-            public IntPtr hStdOutput;
-            public IntPtr hStdError;
-        }
-
-        [DllImport("kernel32.dll", ExactSpelling = true)]
-        private static extern IntPtr GetCurrentProcess();
-
-        [DllImport("advapi32.dll", ExactSpelling = true, SetLastError = true)]
-        private static extern bool OpenProcessToken(IntPtr h, int acc, ref IntPtr phtok);
-
-        [DllImport("advapi32.dll", SetLastError = true)]
-        private static extern bool LookupPrivilegeValue(string host, string name, ref LUID pluid);
-
-        [DllImport("advapi32.dll", ExactSpelling = true, SetLastError = true)]
-        private static extern bool AdjustTokenPrivileges(IntPtr htok, bool disall, ref TOKEN_PRIVILEGES newst, int len, IntPtr prev, IntPtr relen);
-
-        [DllImport("kernel32.dll", CharSet = CharSet.Auto, SetLastError = true)]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        private static extern bool CloseHandle(IntPtr hObject);
-
-
-        [DllImport("user32.dll")]
-        private static extern IntPtr GetShellWindow();
-
-        [DllImport("user32.dll", SetLastError = true)]
-        private static extern uint GetWindowThreadProcessId(IntPtr hWnd, out uint lpdwProcessId);
-
-        [DllImport("kernel32.dll", SetLastError = true)]
-        private static extern IntPtr OpenProcess(ProcessAccessFlags processAccess, bool bInheritHandle, uint processId);
-
-        [DllImport("advapi32.dll", CharSet = CharSet.Auto, SetLastError = true)]
-        private static extern bool DuplicateTokenEx(IntPtr hExistingToken, uint dwDesiredAccess, IntPtr lpTokenAttributes, SECURITY_IMPERSONATION_LEVEL impersonationLevel, TOKEN_TYPE tokenType, out IntPtr phNewToken);
-
-        [DllImport("advapi32", SetLastError = true, CharSet = CharSet.Unicode)]
-        private static extern bool CreateProcessWithTokenW(IntPtr hToken, int dwLogonFlags, string lpApplicationName, string lpCommandLine, int dwCreationFlags, IntPtr lpEnvironment, string lpCurrentDirectory, [In] ref STARTUPINFO lpStartupInfo, out PROCESS_INFORMATION lpProcessInformation);
-
-        #endregion
     }
 }

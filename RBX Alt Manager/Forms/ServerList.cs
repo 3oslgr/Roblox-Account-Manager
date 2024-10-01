@@ -16,6 +16,7 @@ using System.Linq;
 using System.Net;
 using System.Net.NetworkInformation;
 using System.Reflection;
+using System.Security.Cryptography;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Windows.Forms;
@@ -138,7 +139,7 @@ namespace RBX_Alt_Manager
         public static RestClient GamesClient;
         private int Page = 0;
         private List<FavoriteGame> Favorites;
-        private readonly string FavGamesFN = Path.Combine(Environment.CurrentDirectory, "FavoriteGames.json");
+        private readonly string FavGamesFN = Path.Combine(DataDirectory.FullName, "FavoriteGames.json");
         public static List<ServerData> servers = new List<ServerData>();
         public static long CurrentPlaceID = 0;
         private readonly object RLLock = new object();
@@ -228,6 +229,7 @@ namespace RBX_Alt_Manager
 
             Task.Factory.StartNew(async () =>
             {
+                HashSet<string> ServersFound = new HashSet<string>();
                 Busy = true;
 
                 while (publicInfo.nextPageCursor != null && Busy)
@@ -243,6 +245,9 @@ namespace RBX_Alt_Manager
 
                         foreach (ServerData data in publicInfo.data)
                         {
+                            if (ServersFound.Contains(data.id)) continue;
+                            ServersFound.Add(data.id);
+
                             data.type = "Public";
                             servers.Add(data);
                             sservers.Add(data);
@@ -258,19 +263,27 @@ namespace RBX_Alt_Manager
                 {
                     while (vipInfo.nextPageCursor != null)
                     {
-                        RestRequest request = AccountManager.SelectedAccount.MakeRequest("v1/games/" + PlaceId + "/servers/VIP?sortOrder=Asc&limit=25" + (vipInfo.nextPageCursor == "_" ? "" : "&cursor=" + vipInfo.nextPageCursor), Method.Get).AddHeader("Accept", "application/json");
+                        RestRequest request = AccountManager.SelectedAccount.MakeRequest("v1/games/" + PlaceId + "/private-servers?sortOrder=Asc&limit=25" + (vipInfo.nextPageCursor == "_" ? "" : "&cursor=" + vipInfo.nextPageCursor), Method.Get).AddHeader("Accept", "application/json");
                         response = GamesClient.Execute(request);
 
                         if (response.StatusCode == HttpStatusCode.OK)
                         {
                             vipInfo = JsonConvert.DeserializeObject<ServersInfo>(response.Content);
+                            List<ServerData> privateServers = new List<ServerData>();
 
                             foreach (ServerData data in vipInfo.data)
                             {
-                                data.id = data.name;
-                                data.type = "VIP";
-                                servers.Add(data);
+                                if (string.IsNullOrEmpty(data.accessCode)) continue; // server is inactive
+                                if (ServersFound.Contains(data.accessCode)) continue;
+
+                                ServersFound.Add(data.accessCode);
+
+                                data.id = data.accessCode;
+                                data.type = "Private";
+                                privateServers.Add(data);
                             }
+
+                            ServerListView.AddObjects(privateServers);
                         }
                     }
                 }
@@ -280,7 +293,7 @@ namespace RBX_Alt_Manager
         private void ServerListView_MouseDoubleClick(object sender, MouseEventArgs e)
         {
             if (ServerListView.SelectedObject is ServerData server)
-                AccountManager.Instance.JobID.Text = server.type == "VIP" ? "VIP:" + server.accessCode : server.id;
+                AccountManager.Instance.JobID.Text = server.type == "Private" ? "Private:" + server.accessCode : server.id;
         }
 
         private async void joinServerToolStripMenuItem_Click(object sender, EventArgs e)
@@ -399,30 +412,43 @@ namespace RBX_Alt_Manager
             GameListPanel.Controls.Clear();
 
             bool NoTerm = string.IsNullOrEmpty(Term.Text);
-            RestResponse Response = null;
+
+            List<PageGame> gamesList = new List<PageGame>();
+
+            JObject ProcessGames(RestResponse Response)
+            {
+                if (Response.StatusCode != HttpStatusCode.OK) return null;
+
+                JObject Result = JObject.Parse(Response.Content);
+
+                foreach (var game in Result.SelectTokens(NoTerm ? "$.games[*]" : "$.searchResults[*].contents[0]"))
+                {
+                    var Pair = game.SelectTokens(NoTerm ? "['placeId', 'name']" : "['rootPlaceId', 'name']").ToArray();
+
+                    if (Pair.Length != 2 || gamesList.Exists(g => g.PlaceID == Pair[0].Value<long>())) continue;
+
+                    gamesList.Add(new PageGame(Pair[0].Value<long>(), Pair[1].Value<string>()));
+                }
+
+                return Result;
+            }
 
             if (NoTerm)
-                Response = await GamesClient.ExecuteAsync(new RestRequest(string.Format("v1/games/list?model.startRows={0}&model.maxRows=50", Page * 50), Method.Get));
+                ProcessGames( await GamesClient.ExecuteAsync(new RestRequest(string.Format("v1/games/list?model.startRows={0}&model.maxRows=50", Page * 50), Method.Get)));
             else
-                Response = await AccountManager.MainClient.ExecuteAsync(new RestRequest($"games/list-json?keyword={Term.Text}&startRows={Page * 40}&maxRows=40", Method.Get));
+            {
+                using var API = new RestClient("https://apis.roblox.com/");
+                string Token = string.Empty;
+
+                for (int i = 0; i < Page + 1; i++)
+                                    Token = ProcessGames(await API.ExecuteAsync(new RestRequest($"search-api/omni-search?searchQuery={Term.Text}&pageToken={Token}&sessionId={Guid.NewGuid()}&pageType=all", Method.Get))).SelectToken("$.nextPageToken")?.Value<string>();
+            }            
 
             lock (RLLock)
             {
                 List<GameControl> GControls = new List<GameControl>();
 
-                if (Response.StatusCode == HttpStatusCode.OK)
-                {
-                    List<PageGame> gamesList = NoTerm ? new List<PageGame>() : JsonConvert.DeserializeObject<List<PageGame>>(Response.Content);
-
-                    if (NoTerm)
-                    {
-                        dynamic Result = JObject.Parse(Response.Content);
-
-                        foreach (dynamic game in Result?.games)
-                            gamesList.Add(new PageGame((long)game.placeId, (string)game.name));
-                    }
-
-                    foreach (PageGame game in gamesList)
+                                    foreach (PageGame game in gamesList)
                     {
                         int LikeRatio = 0;
 
@@ -442,8 +468,7 @@ namespace RBX_Alt_Manager
 
                         GControls.Add(RControl);
                     }
-                }
-
+                
                 if (GControls != null && GControls.Count > 0)
                     GameListPanel.InvokeIfRequired(() => GameListPanel.Controls.AddRange(GControls.ToArray()));
 
@@ -608,7 +633,7 @@ namespace RBX_Alt_Manager
                 ProductInfo placeInfo = JsonConvert.DeserializeObject<ProductInfo>(response.Content);
 
                 if (!string.IsNullOrEmpty(AccountManager.CurrentJobId) && AccountManager.CurrentJobId.Contains("privateServerLinkCode"))
-                    AddFavoriteToList(new FavoriteGame($"{placeInfo.Name} (VIP)", Convert.ToInt64(AccountManager.CurrentPlaceId), AccountManager.CurrentJobId, SaveFavorites));
+                    AddFavoriteToList(new FavoriteGame($"{placeInfo.Name} (Private)", Convert.ToInt64(AccountManager.CurrentPlaceId), AccountManager.CurrentJobId, SaveFavorites));
                 else
                     AddFavoriteToList(new FavoriteGame(placeInfo.Name, Convert.ToInt64(AccountManager.CurrentPlaceId), SaveFavorites));
             }
@@ -1014,5 +1039,11 @@ namespace RBX_Alt_Manager
         }
 
         private void OpenLogsButton_Click(object sender, EventArgs e) => Process.Start("explorer.exe", Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Roblox", "logs"));
+
+        private void Term_Click(object sender, EventArgs e)
+        {
+            if (Term.SelectedText.Length == 0)
+                Term.SelectAll();
+        }
     }
 }

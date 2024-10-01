@@ -18,4 +18,12 @@ namespace RBX_Alt_Manager
         public string FriendsMouseover;
         public string PlayersCapacity;
     }
+
+    public class GameInstancesCollection
+    {
+        public long PlaceId;
+        public bool ShowShutdownAllButton;
+        public List<GameInstance> Collection;
+        public int TotalCollectionSize;
+    }
 }

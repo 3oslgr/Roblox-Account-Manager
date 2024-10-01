@@ -19,9 +19,7 @@ namespace RBX_Alt_Manager
         public string ip;
         public bool regionLoaded;
 
-        public ServerData()
-        {
-        }
+        public ServerData() { }
 
         public ServerData(string id, int maxPlayers, int playing, string fps, int ping)
         {

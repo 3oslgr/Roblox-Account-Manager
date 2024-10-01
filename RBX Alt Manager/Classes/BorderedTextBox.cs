@@ -11,12 +11,7 @@ namespace RBX_Alt_Manager.Classes
         const uint RDW_INVALIDATE = 0x1;
         const uint RDW_IUPDATENOW = 0x100;
         const uint RDW_FRAME = 0x400;
-        [DllImport("user32.dll")]
-        static extern IntPtr GetWindowDC(IntPtr hWnd);
-        [DllImport("user32.dll")]
-        static extern int ReleaseDC(IntPtr hWnd, IntPtr hDC);
-        [DllImport("user32.dll")]
-        static extern bool RedrawWindow(IntPtr hWnd, IntPtr lprc, IntPtr hrgn, uint flags);
+
         Color borderColor = Color.FromArgb(0x7A7A7A);
 
         [StructLayout(LayoutKind.Sequential)]
@@ -25,10 +20,6 @@ namespace RBX_Alt_Manager.Classes
             public uint cbSize;
             public int iMinAnimate;
         };
-
-        [DllImport("user32", SetLastError = true)]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        public static extern bool SystemParametersInfo(uint uiAction, uint uiParam, ref ANIMATIONINFO pvParam, uint fWinIni);
 
         public static uint SPIF_SENDCHANGE = 0x02;
         public static uint SPI_SETANIMATION = 0x0049;
@@ -45,7 +36,7 @@ namespace RBX_Alt_Manager.Classes
                 opaquePen = new Pen(new SolidBrush(Color.FromArgb(255, value.R, value.G, value.B)));
                 borderPen = new Pen(BorderColor, 1f);
 
-                RedrawWindow(Handle, IntPtr.Zero, IntPtr.Zero, RDW_FRAME | RDW_IUPDATENOW | RDW_INVALIDATE);
+                Natives.RedrawWindow(Handle, IntPtr.Zero, IntPtr.Zero, RDW_FRAME | RDW_IUPDATENOW | RDW_INVALIDATE);
             }
         }
 
@@ -60,7 +51,7 @@ namespace RBX_Alt_Manager.Classes
 
             if ((m.Msg == WM_NCPAINT || msg == WM.PAINT) && BorderColor != Color.Transparent && BorderStyle == BorderStyle.Fixed3D)
             {
-                var hdc = GetWindowDC(this.Handle);
+                var hdc = Natives.GetWindowDC(Handle);
 
                 using (var g = Graphics.FromHdcInternal(hdc))
                 {
@@ -71,7 +62,7 @@ namespace RBX_Alt_Manager.Classes
                     g.DrawRectangle(borderPen, new Rectangle(1, 1, Width - 3, Height - 3));
                 }
 
-                ReleaseDC(this.Handle, hdc);
+                Natives.ReleaseDC(Handle, hdc);
             }
         }
 
@@ -79,7 +70,7 @@ namespace RBX_Alt_Manager.Classes
         {
             base.OnSizeChanged(e);
 
-            RedrawWindow(Handle, IntPtr.Zero, IntPtr.Zero, RDW_FRAME | RDW_IUPDATENOW | RDW_INVALIDATE);
+            Natives.RedrawWindow(Handle, IntPtr.Zero, IntPtr.Zero, RDW_FRAME | RDW_IUPDATENOW | RDW_INVALIDATE);
         }
     }
 }

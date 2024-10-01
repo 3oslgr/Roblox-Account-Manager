@@ -118,35 +118,26 @@
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
   <assembly alias="System.Windows.Forms" name="System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" />
-  <data name="team_KX4_icon_white" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\team_KX4_icon_white.ico;System.Drawing.Icon, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
-  </data>
-  <data name="online" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\resources\online.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  <data name="ShuffleIcon" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\shuffle-crossing-arrows.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
   <data name="team_KX4_icon" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Resources\team_KX4_icon.ico;System.Drawing.Icon, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
-  <data name="configIcon" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\configIcon.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  <data name="AppConfigHash" xml:space="preserve">
+    <value>D0F38F221AD00E1CDEFDE94907C96160208D4245A6C6EA97D97E1ED853AD900A</value>
   </data>
-  <data name="disc" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\disc.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  <data name="libsodium" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\libsodium.dll;System.Byte[], mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
-  <data name="SaveIconSmall" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\SaveIconSmall.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  <data name="log4" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\log4.config;System.Byte[], mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
-  <data name="donation" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\donation.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  <data name="App" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\app.config;System.Byte[], mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
-  <data name="server_icon_white" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\server_icon_white.ico;System.Drawing.Icon, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
-  </data>
-  <data name="offline" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\resources\offline.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
-  </data>
-  <data name="icons8_history_32" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\icons8-history-32.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  <data name="online" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\resources\online.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
   <data name="DefaultTheme" xml:space="preserve">
     <value>[Roblox Account Manager]
@@ -166,11 +157,41 @@ TextBoxesBG=#3A3A3A
 TextBoxesFG=#FFFFFF
 TextBoxesBC=#282828</value>
   </data>
-  <data name="ShuffleIcon" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\shuffle-crossing-arrows.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  <data name="CefSharpDownload" xml:space="preserve">
+    <value>https://github.com/ic3w0lf22/Roblox-Account-Manager/releases/download/3.5.2/CEF.zip</value>
+  </data>
+  <data name="server_icon_white" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\server_icon_white.ico;System.Drawing.Icon, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
   <data name="handle" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Resources\handle.exe;System.Byte[], mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="SaveIconSmall" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\SaveIconSmall.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="icons8_history_32" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\icons8-history-32.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="offline" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\resources\offline.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="team_KX4_icon_white" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\team_KX4_icon_white.ico;System.Drawing.Icon, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="discord" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\discord.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="donate" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\donate.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="Log4ConfigHash" xml:space="preserve">
+    <value>E4B10630D9EC2AF508DE31752FBBC6816C7426C40A3E57F0A085CE7F42C77BD5</value>
+  </data>
+  <data name="ManualInstallHTML" xml:space="preserve">
+    <value>&lt;style&gt;*{{color:rgba(232,230,227,1);font-family:Arial,Helvetica,sans-serif}}a{{color:#4892f1}}li{{font-size:20px}}body{{background-color:#131516}}code{{background-color:rgba(255,255,255,.12);font-size:18px}}&lt;/style&gt;&lt;script crossorigin=anonymous integrity="sha512-3gJwYpMe3QewGELv8k/BX9vcqhryRdzRMxVfq6ngyWXwo03GFEzjsUm8Q7RZcHPHksttq7/GFoxjCVUjkjvPdw=="referrerpolicy=no-referrer src=https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.0/jquery.min.js&gt;&lt;/script&gt;&lt;script crossorigin=anonymous integrity="sha512-lbwH47l/tPXJYG9AcFNoJaTMhGvYWhVM9YI43CT+uteTRRaiLCui8snIgyAN8XWgNjNhCqlAUdzZptso6OCoFQ=="referrerpolicy=no-referrer src=https://cdnjs.cloudflare.com/ajax/libs/toastr.js/2.1.4/toastr.min.js&gt;&lt;/script&gt;&lt;link crossorigin=anonymous href=https://cdnjs.cloudflare.com/ajax/libs/toastr.js/2.1.4/toastr.css integrity="sha512-oe8OpYjBaDWPt2VmSFR+qYOdnTjeV9QPLJUeqZyprDEQvQLJ9C5PCFclxwNuvb/GQgQngdCXzKSFltuHD3eCxA=="referrerpolicy=no-referrer rel=stylesheet&gt;&lt;div style="padding:10px 25px"&gt;&lt;h1&gt;How to manually install {0} for Roblox Account Manager&lt;/h1&gt;&lt;ol&gt;&lt;li&gt;Close Roblox Account Manager first&lt;li&gt;Download the {0} ZIP file by clicking &lt;a href={1}&gt;here&lt;/a&gt; or by going to &lt;code&gt;{1}&lt;/code&gt;&lt;li&gt;Open the ZIP file and extract the folder named “{2}” to &lt;code&gt;{3}&lt;/code&gt;&lt;li&gt;Relaunch Roblox Account Manager&lt;/ol&gt;&lt;h2&gt;&lt;a href="https://youtu.be/yC5g22aXYlQ"&gt;Tutorial Video&lt;/a&gt;&lt;/h2&gt;&lt;iframe width="1366" height="768" src="https://www.youtube.com/embed/yC5g22aXYlQ" title="how to manually install chromium for account manager" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen&gt;&lt;/iframe&gt;&lt;/div&gt;&lt;script&gt;toastr.options.timeOut=2e3,toastr.options.preventDuplicates=!0,toastr.options.positionClass="toast-top-right",$("code").each((function(){{$(this).on("click",(function(){{!async function(t){{await navigator.clipboard.writeText(t),toastr.success("Copied to clipboard!")}}($(this)[0].innerText)}}))}}));&lt;/script&gt;</value>
+  </data>
+  <data name="config" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\config.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
   <data name="NexusLoader" xml:space="preserve">
     <value>Nexus_Version = 104
@@ -214,25 +235,7 @@ if not Success and Error then
 	(messagebox or print)(('Nexus encountered an error while launching!\n\n%s'):format(Error), 'Roblox Account Manager', 0)
 end</value>
   </data>
-  <data name="libsodium" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\libsodium.dll;System.Byte[], mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
-  </data>
-  <data name="App" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\app.config;System.Byte[], mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
-  </data>
-  <data name="AppConfigHash" xml:space="preserve">
-    <value>5E0BA1895CF088E6D6907B8ABBD8CD41C86F39CC642351A9AB0BF458BF1F5B31</value>
-  </data>
-  <data name="log4" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\log4.config;System.Byte[], mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
-  </data>
-  <data name="Log4ConfigHash" xml:space="preserve">
-    <value>E4B10630D9EC2AF508DE31752FBBC6816C7426C40A3E57F0A085CE7F42C77BD5</value>
-  </data>
-  <data name="ManualInstallHTML" xml:space="preserve">
-    <value>&lt;style&gt;*{{color:rgba(232,230,227,1);font-family:Arial,Helvetica,sans-serif}}a{{color:#4892f1}}li{{font-size:20px}}body{{background-color:#131516}}code{{background-color:rgba(255,255,255,.12);font-size:18px}}&lt;/style&gt;&lt;script crossorigin=anonymous integrity="sha512-3gJwYpMe3QewGELv8k/BX9vcqhryRdzRMxVfq6ngyWXwo03GFEzjsUm8Q7RZcHPHksttq7/GFoxjCVUjkjvPdw=="referrerpolicy=no-referrer src=https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.0/jquery.min.js&gt;&lt;/script&gt;&lt;script crossorigin=anonymous integrity="sha512-lbwH47l/tPXJYG9AcFNoJaTMhGvYWhVM9YI43CT+uteTRRaiLCui8snIgyAN8XWgNjNhCqlAUdzZptso6OCoFQ=="referrerpolicy=no-referrer src=https://cdnjs.cloudflare.com/ajax/libs/toastr.js/2.1.4/toastr.min.js&gt;&lt;/script&gt;&lt;link crossorigin=anonymous href=https://cdnjs.cloudflare.com/ajax/libs/toastr.js/2.1.4/toastr.css integrity="sha512-oe8OpYjBaDWPt2VmSFR+qYOdnTjeV9QPLJUeqZyprDEQvQLJ9C5PCFclxwNuvb/GQgQngdCXzKSFltuHD3eCxA=="referrerpolicy=no-referrer rel=stylesheet&gt;&lt;div style="padding:10px 25px"&gt;&lt;h1&gt;How to manually install {0} for Roblox Account Manager&lt;/h1&gt;&lt;ol&gt;&lt;li&gt;Close Roblox Account Manager first&lt;li&gt;Download the {0} ZIP file by clicking &lt;a href={1}&gt;here&lt;/a&gt; or by going to &lt;code&gt;{1}&lt;/code&gt;&lt;li&gt;Open the ZIP file and extract the folder named “{2}” to &lt;code&gt;{3}&lt;/code&gt;&lt;li&gt;Relaunch Roblox Account Manager&lt;/ol&gt;&lt;h2&gt;&lt;a href="https://youtu.be/yC5g22aXYlQ"&gt;Tutorial Video&lt;/a&gt;&lt;/h2&gt;&lt;iframe width="1366" height="768" src="https://www.youtube.com/embed/yC5g22aXYlQ" title="how to manually install chromium for account manager" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen&gt;&lt;/iframe&gt;&lt;/div&gt;&lt;script&gt;toastr.options.timeOut=2e3,toastr.options.preventDuplicates=!0,toastr.options.positionClass="toast-top-right",$("code").each((function(){{$(this).on("click",(function(){{!async function(t){{await navigator.clipboard.writeText(t),toastr.success("Copied to clipboard!")}}($(this)[0].innerText)}}))}}));&lt;/script&gt;</value>
-  </data>
-  <data name="CefSharpDownload" xml:space="preserve">
-    <value>https://github.com/ic3w0lf22/Roblox-Account-Manager/releases/download/3.5.2/CEF.zip</value>
+  <data name="save" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\save.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
 </root>

@@ -97,13 +97,9 @@ namespace RBX_Alt_Manager.Forms
 
         public static void LoadTheme()
         {
-            ThemeIni ??= File.Exists(Path.Combine(Environment.CurrentDirectory, "RAMTheme.ini")) ? new IniFile("RAMTheme.ini") : new IniFile();
+            ThemeIni ??= File.Exists(Path.Combine(Program.DataDirectory.FullName, "RAMTheme.ini")) ? new IniFile("RAMTheme.ini") : new IniFile();
 
             Theme = ThemeIni.Section(Assembly.GetExecutingAssembly().GetName().Name);
-
-            // bool.TryParse(Theme.Get("DisableCustomTabs"), out UseNormalTabControls);
-
-            // if (!Theme.Exists("DisableCustomTabs")) { Theme.Set("DisableCustomTabs", "false"); ThemeIni.Save("RAMTheme.ini"); }
 
             if (Theme.Exists("AccountsBG")) AccountBackground = ColorTranslator.FromHtml(Theme.Get("AccountsBG"));
             if (Theme.Exists("AccountsFG")) AccountForeground = ColorTranslator.FromHtml(Theme.Get("AccountsFG"));
@@ -133,7 +129,7 @@ namespace RBX_Alt_Manager.Forms
 
         public static void SaveTheme()
         {
-            ThemeIni ??= File.Exists(Path.Combine(Environment.CurrentDirectory, "RAMTheme.ini")) ? new IniFile("RAMTheme.ini") : new IniFile();
+            ThemeIni ??= File.Exists(Path.Combine(Program.DataDirectory.FullName, "RAMTheme.ini")) ? new IniFile("RAMTheme.ini") : new IniFile();
             Theme ??= ThemeIni.Section(Assembly.GetExecutingAssembly().GetName().Name);
 
             Theme.Set("AccountsBG", ToHexString(AccountBackground));
@@ -322,7 +318,7 @@ namespace RBX_Alt_Manager.Forms
         {
             UseDarkTopBar = !UseDarkTopBar;
             SaveTheme();
-            MessageBox.Show("This option requires RAM to be restarted.\nThis may not work on older versions of windows.\nEnabled: " + (UseDarkTopBar ? "True" : "false"), "Roblox Account Manager", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            MessageBox.Show("This option requires RAM to be restarted.\nThis may not work on older versions of windows.\nEnabled: " + (UseDarkTopBar ? "true" : "false"), "Roblox Account Manager", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
     }
 }

@@ -53,7 +53,7 @@ namespace RBX_Alt_Manager
                                     ctx.Response.OutputStream.Write(buf, 0, buf.Length);
                                 }
                             }
-                            catch (Exception x) { Program.Logger.Error($"WebServer error: {x.Message}{x.StackTrace}"); }
+                            catch (Exception x) { Program.Logger.Error($"[WebServer::Run] WebServer error: {x.Message}{x.StackTrace}"); }
                             finally
                             {
                                 try { ctx.Response.OutputStream.Close(); } catch { } // couldn't find any good solution :( so i just wrapped it in a try-catch block ):

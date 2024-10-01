@@ -6,7 +6,6 @@ using RBX_Alt_Manager.Properties;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.Eventing.Reader;
 using System.Drawing;
 using System.IO;
 using System.Linq;
@@ -19,14 +18,11 @@ using WebSocketSharp;
 using WebSocketSharp.Net.WebSockets;
 using WebSocketSharp.Server;
 
-//this.ScriptTabs = ThemeEditor.UseNormalTabControls ? new System.Windows.Forms.TabControl() : new RBX_Alt_Manager.Classes.NBTabControl();
-//this.ACTabs = ThemeEditor.UseNormalTabControls ? new System.Windows.Forms.TabControl() : new RBX_Alt_Manager.Classes.NBTabControl();
-
 namespace RBX_Alt_Manager.Forms
 {
     public partial class AccountControl : Form
     {
-        private static readonly string ACFile = Path.Combine(Environment.CurrentDirectory, "AccountControlData.json");
+        private static readonly string ACFile = Path.Combine(Program.DataDirectory.FullName, "AccountControlData.json");
         private static readonly object SaveLock = new object();
 
         public static AccountControl Instance;
@@ -40,9 +36,6 @@ namespace RBX_Alt_Manager.Forms
         private StreamWriter OutputWriter;
 
         private bool SettingsLoaded;
-
-        [DllImport("user32", EntryPoint = "SendMessageA", CharSet = CharSet.Ansi, SetLastError = true, ExactSpelling = true)]
-        private static extern int SendMessage(int hwnd, int wMsg, int wParam, int lParam);
 
         public AccountControl()
         {
@@ -158,7 +151,7 @@ namespace RBX_Alt_Manager.Forms
                 ForeColor = ThemeEditor.FormsForeground
             };
 
-            int numberOfLines = SendMessage(l.Handle.ToInt32(), 0xBA, 0, 0);
+            int numberOfLines = Natives.SendMessage(l.Handle.ToInt32(), 0xBA, 0, 0);
             l.Height = ((l.Font.Height + 2) * numberOfLines) - 6;
 
             bool ScrollToBottom = OutputPanel.VerticalScroll.Value - (OutputPanel.VerticalScroll.Maximum - OutputPanel.Height + 20) > -20;
@@ -306,7 +299,7 @@ namespace RBX_Alt_Manager.Forms
             try { Listener.Wait(50); }
             catch (InvalidOperationException x)
             {
-                MessageBox.Show($"{x.Message} {x.StackTrace}", "Account Control", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show($"{x}", "Account Control", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 Hide();
             }
 
@@ -342,32 +335,41 @@ namespace RBX_Alt_Manager.Forms
             {
                 string Data = (string)e.Data.GetData(DataFormats.CommaSeparatedValue);
 
-                foreach (string Line in Data.Split('\n'))
+                AddAccounts(Data);
+            }
+        }
+
+        public void AddAccounts(string Data)
+        {
+            if (string.IsNullOrEmpty(Data)) return;
+
+            foreach (string Line in Data.Split('\n'))
+            {
+                string Username = string.Empty;
+
+                Match match = Regex.Match(Line, @"""?(\w+)""?");
+
+                if (match.Success)
+                    Username = match.Groups[1].Value;
+
+                if (!string.IsNullOrEmpty(Username))
                 {
-                    string Username = string.Empty;
+                    Account account = AccountManager.AccountsList.FirstOrDefault(x => x.Username == Username);
 
-                    Match match = Regex.Match(Line, @"""(\w+)""");
-
-                    if (match.Success)
-                        Username = match.Groups[1].Value;
-
-                    if (!string.IsNullOrEmpty(Username))
+                    if (account != null && !Accounts.Exists(x => x.LinkedAccount == account))
                     {
-                        Account account = AccountManager.AccountsList.FirstOrDefault(x => x.Username == Username);
+                        ControlledAccount cAccount = new ControlledAccount(account);
 
-                        if (account != null && !Accounts.Exists(x => x.LinkedAccount == account))
-                        {
-                            ControlledAccount cAccount = new ControlledAccount(account);
+                        Accounts.Add(cAccount);
+                        AccountsView.AddObject(cAccount);
 
-                            Accounts.Add(cAccount);
-                            AccountsView.AddObject(cAccount);
-
-                            SaveAccounts();
-                        }
+                        SaveAccounts();
                     }
                 }
             }
         }
+
+        private void ManualImport_Click(object sender, EventArgs e) => AddAccounts(string.Join("\n", Utilities.OpenAccountSelection().ToArray()));
 
         private void ShowScriptBox_Click(object sender, EventArgs e) => ScriptLayoutPanel.Size = new Size(ScriptLayoutPanel.Width, ScriptLayoutPanel.Height > 20 ? 11 : 212);
 
@@ -469,7 +471,7 @@ namespace RBX_Alt_Manager.Forms
 
         private void NexusDL_Click(object sender, EventArgs e)  
         {
-            string path = Path.Combine(Environment.CurrentDirectory, "Nexus.lua");
+            string path = Path.Combine(AppContext.BaseDirectory, "Nexus.lua");
 
             File.WriteAllText(path, Resources.NexusLoader);
 
@@ -510,7 +512,7 @@ namespace RBX_Alt_Manager.Forms
 
                 ClearDeadProcesses();
             }
-            catch (Exception x) { Program.Logger.Error($"An error occured launching an account from auto relaunch: {x.Message} Trace: {x.StackTrace}"); }
+            catch (Exception x) { Program.Logger.Error($"[AccountControl::AutoRelaunchTimer_Tick] An error occured launching an account from auto relaunch: {x.Message} Trace: {x.StackTrace}"); }
         }
 
         private void AccountControl_FormClosing(object sender, FormClosingEventArgs e)
@@ -582,7 +584,7 @@ namespace RBX_Alt_Manager.Forms
         private void MinimizeRoblox_Click(object sender, EventArgs e)
         {
             foreach (Process p in Process.GetProcessesByName("RobloxPlayerBeta"))
-                Utilities.PostMessage(p.MainWindowHandle, 0x0112, 0xF020, 0);
+                Natives.PostMessage(p.MainWindowHandle, 0x0112, 0xF020, 0);
         }
 
         private void CloseRoblox_Click(object sender, EventArgs e)
@@ -594,7 +596,7 @@ namespace RBX_Alt_Manager.Forms
         private void MinimzeTimer_Tick(object sender, EventArgs e)
         {
             foreach (Process p in Process.GetProcessesByName("RobloxPlayerBeta"))
-                Utilities.PostMessage(p.MainWindowHandle, 0x0112, 0xF020, 0);
+                Natives.PostMessage(p.MainWindowHandle, 0x0112, 0xF020, 0);
         }
 
         private void CloseTimer_Tick(object sender, EventArgs e)
@@ -614,7 +616,7 @@ namespace RBX_Alt_Manager.Forms
                     else if (AutoCloseType.SelectedIndex == 1) // Global
                         p.Kill();
                 }
-                catch (Exception x) { Program.Logger.Error($"AutoClose: Cannot access Roblox process ({p.Id}): {x.Message}"); }
+                catch (Exception x) { Program.Logger.Error($"[AccountControl::CloseTimer_Tick] AutoClose: Cannot access Roblox process ({p.Id}): {x.Message}"); }
         }
 
         private void AutoCloseCB_CheckedChanged(object sender, EventArgs e)

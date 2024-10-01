@@ -3,15 +3,11 @@ using Microsoft.Win32;
 using RBX_Alt_Manager.Properties;
 using System;
 using System.Diagnostics;
-using System.Globalization;
 using System.IO;
-using System.Net.Http;
 using System.Reflection;
 using System.Security.Principal;
 using System.Threading;
-using System.Threading.Tasks;
 using System.Windows.Forms;
-using WebSocketSharp;
 
 namespace RBX_Alt_Manager
 {
@@ -19,11 +15,16 @@ namespace RBX_Alt_Manager
     {
         /// <summary>
         /// The main entry point for the application.
+        /// This app is so badly structured. Main reason being it was never intended for public use.
         /// </summary>
 
+        public static DirectoryInfo DataDirectory { get; private set; }
         public static readonly ILog Logger = LogManager.GetLogger("Account Manager");
         public static bool Closed = false; // RobloxProcess.cs would cause the program to chill in the background as long roblox was also running
         public static bool Elevated;
+#if DEBUG
+        public static float Scale = 1.0f; // designer errors with code below
+#else
         public static float Scale
         {
             get
@@ -38,6 +39,7 @@ namespace RBX_Alt_Manager
                 return 1f;
             }
         }
+#endif
 
         public static bool ScaleFonts
         {
@@ -77,6 +79,32 @@ namespace RBX_Alt_Manager
                 // MessageBox.Show("Some features may not work properly if you ran the account manager as admin!", "Roblox Account Manager", MessageBoxButtons.OK, MessageBoxIcon.Error); // I don't think this is an issue anymore
             }
             catch { }
+
+            string[] ValidDataDirectories = new string[] {
+                AppContext.BaseDirectory,
+                AppDomain.CurrentDomain.BaseDirectory,
+                Directory.GetParent(Application.ExecutablePath)?.FullName ?? @"\\",
+                Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Roblox Account Manager")
+            };
+
+            foreach (var Folder in ValidDataDirectories)
+                try
+                {
+                    string FP = Path.Combine(Folder, "0.ram");
+
+                    if (!Directory.Exists(Folder)) Directory.CreateDirectory(Folder);
+
+                    File.Open(FP, FileMode.OpenOrCreate, FileAccess.ReadWrite).Close();
+                    File.Delete(FP);
+
+                    DataDirectory = new DirectoryInfo(Folder);
+
+                    break;
+                }
+                catch (Exception x) { Logger.Error($"[Program::Main] Cannot access data folder `{Folder}`: {x}"); }
+
+            if (DataDirectory == null)
+                throw new DirectoryNotFoundException("No suitable data directory found");
 
 #if DEBUG
             bool IsAutoUpdater = true;
@@ -130,13 +158,13 @@ namespace RBX_Alt_Manager
 
             Application.ApplicationExit += (s, e) => Closed = true;
 
-            if (!File.Exists(Path.Combine(Environment.CurrentDirectory, "RAMTheme.ini")))
-                File.WriteAllText(Path.Combine(Environment.CurrentDirectory, "RAMTheme.ini"), Resources.DefaultTheme);
+            if (!File.Exists(Path.Combine(DataDirectory.FullName, "RAMTheme.ini")))
+                File.WriteAllText(Path.Combine(DataDirectory.FullName, "RAMTheme.ini"), Resources.DefaultTheme);
 
             if (!(Arguments.Length == 1 && Arguments[0] == "-restart"))
             {
                 string AppConfigPath = $"{Application.ExecutablePath}.config";
-                string LogConfigPath = Path.Combine(Environment.CurrentDirectory, "log4.config");
+                string LogConfigPath = Path.Combine(AppContext.BaseDirectory, "log4.config");
                 string AppConfigHash = Utilities.FileSHA256(AppConfigPath);
                 string LogConfigHash = Utilities.FileSHA256(LogConfigPath);
 
@@ -145,6 +173,10 @@ namespace RBX_Alt_Manager
 
                 if (!AppConfigValid || !Log4ConfigValid)
                 {
+#if DEBUG
+                    throw new ApplicationException($"Hash needs to be updated\n[App.config]\n\tCurrent:  {AppConfigHash}\n\tExpected: {Resources.AppConfigHash}\n[log4.config]\n\tCurrent:  {LogConfigHash}\n\tExpected: {Resources.Log4ConfigHash}");
+#endif
+
                     Logger.Warn($"Restarting app due to config hash mismatch\n[App.config]\n\tCurrent:  {AppConfigHash}\n\tExpected: {Resources.AppConfigHash}\n[log4.config]\n\tCurrent:  {LogConfigHash}\n\tExpected: {Resources.Log4ConfigHash}");
 
                     File.WriteAllBytes(AppConfigPath, Resources.App);
@@ -155,8 +187,8 @@ namespace RBX_Alt_Manager
                 }
             }
 
-            if (!File.Exists(Path.Combine(Environment.CurrentDirectory, "libsodium.dll")))
-                File.WriteAllBytes(Path.Combine(Environment.CurrentDirectory, "libsodium.dll"), Resources.libsodium);
+            if (!File.Exists(Path.Combine(AppContext.BaseDirectory, "libsodium.dll")))
+                File.WriteAllBytes(Path.Combine(AppContext.BaseDirectory, "libsodium.dll"), Resources.libsodium);
 
             const string subkey = @"SOFTWARE\Microsoft\NET Framework Setup\NDP\v4\Full\";
 
@@ -176,9 +208,9 @@ namespace RBX_Alt_Manager
                 try
                 {
                     string CookiesFile = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), @"Roblox\LocalStorage\RobloxCookies.dat");
-                    bool Apply773Fix = !(string.IsNullOrEmpty(CookiesFile) || !File.Exists(CookiesFile) || File.Exists(Path.Combine(Environment.CurrentDirectory, "no773fix.txt")));
+                    bool Apply773Fix = !(string.IsNullOrEmpty(CookiesFile) || !File.Exists(CookiesFile) || File.Exists(Path.Combine(AppContext.BaseDirectory, "no773fix.txt")));
 
-                    if (!Apply773Fix) Logger.Error($"Not applying 773 error fix | Cookies File Exists: {File.Exists(CookiesFile)} | User No Fix File Exists: {File.Exists(Path.Combine(Environment.CurrentDirectory, "no773fix.txt"))}");
+                    if (!Apply773Fix) Logger.Error($"[Program::Main] Not applying 773 error fix | Cookies File Exists: {File.Exists(CookiesFile)} | User No Fix File Exists: {File.Exists(Path.Combine(DataDirectory.FullName, "no773fix.txt"))}");
 
                     if (Apply773Fix) try { using (new FileStream(CookiesFile, FileMode.Open, FileAccess.ReadWrite, FileShare.None)) { } } catch { Apply773Fix = false; } // Check if the file is already locked by another program
 

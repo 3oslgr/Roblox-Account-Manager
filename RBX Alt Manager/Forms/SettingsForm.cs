@@ -1,4 +1,5 @@
 ﻿using Microsoft.Win32;
+using RBX_Alt_Manager.Classes;
 using System;
 using System.Diagnostics;
 using System.Drawing;
@@ -24,14 +25,14 @@ namespace RBX_Alt_Manager.Forms
         private void SettingsForm_Load(object sender, EventArgs e)
         {
             AutoUpdateCB.Checked = AccountManager.General.Get<bool>("CheckForUpdates");
-            AsyncJoinCB.Checked = AccountManager.General.Get<bool>("AsyncJoin");
-            LaunchDelayNumber.Value = AccountManager.General.Get<decimal>("AccountJoinDelay");
+            LaunchDelayNumber.Value = AccountManager.General.Get<decimal>("AccountJoinDelayMS");
             SavePasswordCB.Checked = AccountManager.General.Get<bool>("SavePasswords");
             DisableAgingAlertCB.Checked = AccountManager.General.Get<bool>("DisableAgingAlert");
             HideMRobloxCB.Checked = AccountManager.General.Get<bool>("HideRbxAlert");
             DisableImagesCB.Checked = AccountManager.General.Get<bool>("DisableImages");
             ShuffleLowestServerCB.Checked = AccountManager.General.Get<bool>("ShuffleChoosesLowestServer");
             MultiRobloxCB.Checked = AccountManager.General.Get<bool>("EnableMultiRbx");
+            AutoCookieRefreshCB.Checked = AccountManager.General.Get<bool>("AutoCookieRefresh");
             RegionFormatTB.Text = AccountManager.General.Get<string>("ServerRegionFormat");
             MaxRecentGamesNumber.Value = AccountManager.General.Get<int>("MaxRecentGames");
 
@@ -47,7 +48,7 @@ namespace RBX_Alt_Manager.Forms
             PortNumber.Value = AccountManager.WebServer.Get<decimal>("WebServerPort");
 
             PresenceCB.Checked = AccountManager.General.Get<bool>("ShowPresence");
-            PresenceUpdateRateNum .Value = AccountManager.General.Get<int>("PresenceUpdateRate");
+            PresenceUpdateRateNum.Value = AccountManager.General.Get<int>("PresenceUpdateRate");
             UnlockFPSCB.Checked = AccountManager.General.Get<bool>("UnlockFPS");
             MaxFPSValue.Value = AccountManager.General.Get<int>("MaxFPSValue");
 
@@ -88,21 +89,11 @@ namespace RBX_Alt_Manager.Forms
             AccountManager.IniSettings.Save("RAMSettings.ini");
         }
 
-        private void AsyncJoinCB_CheckedChanged(object sender, EventArgs e)
-        {
-            LaunchDelayNumber.Enabled = !AsyncJoinCB.Checked;
-
-            if (!SettingsLoaded) return;
-
-            AccountManager.General.Set("AsyncJoin", AsyncJoinCB.Checked ? "true" : "false");
-            AccountManager.IniSettings.Save("RAMSettings.ini");
-        }
-
         private void LaunchDelayNumber_ValueChanged(object sender, EventArgs e)
         {
             if (!SettingsLoaded) return;
 
-            AccountManager.General.Set("AccountJoinDelay", LaunchDelayNumber.Value.ToString());
+            AccountManager.General.Set("AccountJoinDelayMS", LaunchDelayNumber.Value.ToString());
             AccountManager.IniSettings.Save("RAMSettings.ini");
         }
 
@@ -300,6 +291,8 @@ namespace RBX_Alt_Manager.Forms
 
             AccountManager.General.Set("PresenceUpdateRate", PresenceUpdateRateNum.Value.ToString());
             AccountManager.IniSettings.Save("RAMSettings.ini");
+
+            AccountManager.Instance.PresenceTimer.Interval = (double)PresenceUpdateRateNum.Value * 1000;
         }
 
         private void UnlockFPSCB_CheckedChanged(object sender, EventArgs e)
@@ -336,7 +329,7 @@ namespace RBX_Alt_Manager.Forms
                 {
                     if (File.Exists(CustomClientSettingsDialog.FileName) && File.ReadAllText(CustomClientSettingsDialog.FileName).TryParseJson<object>(out _))
                     {
-                        string FileName = Path.Combine(Environment.CurrentDirectory, "CustomClientAppSettings.json");
+                        string FileName = Path.Combine(Program.DataDirectory.FullName, "CustomClientAppSettings.json");
 
                         File.Copy(CustomClientSettingsDialog.FileName, FileName);
                         AccountManager.General.Set("CustomClientSettings", FileName);
@@ -362,6 +355,8 @@ namespace RBX_Alt_Manager.Forms
             Process.Start(AFN, "-update");
             Environment.Exit(1);
         }
+
+        private void BrowserKillButton_Click(object sender, EventArgs e) => AccountBrowser.KillBrowsers();
 
         #endregion
 

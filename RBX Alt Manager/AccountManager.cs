@@ -4,6 +4,7 @@ using Microsoft.Win32;
 using Microsoft.WindowsAPICodePack.Dialogs;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using Newtonsoft.Json.Serialization;
 using PuppeteerSharp;
 using RBX_Alt_Manager.Classes;
 using RBX_Alt_Manager.Forms;
@@ -11,6 +12,7 @@ using RBX_Alt_Manager.Properties;
 using RestSharp;
 using Sodium;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
@@ -71,6 +73,7 @@ namespace RBX_Alt_Manager
         private WebServer AltManagerWS;
         private string WSPassword { get; set; }
         public System.Timers.Timer AutoCookieRefresh { get; private set; }
+        public System.Timers.Timer PresenceTimer { get; private set; }
 
         public static IniFile IniSettings;
         public static IniSection General;
@@ -84,21 +87,20 @@ namespace RBX_Alt_Manager
         private readonly static object saveLock = new object();
         private readonly static object rgSaveLock = new object();
         public event EventHandler<GameArgs> RecentGameAdded;
+        public event EventHandler<EventArgs> SelectedAccountsChanged;
 
         private bool IsResettingPassword;
         private bool IsDownloadingChromium;
-        private bool LaunchNext;
         private CancellationTokenSource LauncherToken;
+
+        private static readonly Hashtable UserIDCache = new Hashtable(StringComparer.InvariantCultureIgnoreCase);
 
         private static readonly byte[] Entropy = new byte[] { 0x52, 0x4f, 0x42, 0x4c, 0x4f, 0x58, 0x20, 0x41, 0x43, 0x43, 0x4f, 0x55, 0x4e, 0x54, 0x20, 0x4d, 0x41, 0x4e, 0x41, 0x47, 0x45, 0x52, 0x20, 0x7c, 0x20, 0x3a, 0x29, 0x20, 0x7c, 0x20, 0x42, 0x52, 0x4f, 0x55, 0x47, 0x48, 0x54, 0x20, 0x54, 0x4f, 0x20, 0x59, 0x4f, 0x55, 0x20, 0x42, 0x55, 0x59, 0x20, 0x69, 0x63, 0x33, 0x77, 0x30, 0x6c, 0x66 };
 
-        [DllImport("DwmApi")]
-        private static extern int DwmSetWindowAttribute(IntPtr hwnd, int attr, int[] attrValue, int attrSize);
-
         public static void SetDarkBar(IntPtr Handle)
         {
-            if (ThemeEditor.UseDarkTopBar && DwmSetWindowAttribute(Handle, 19, new[] { 1 }, 4) != 0)
-                DwmSetWindowAttribute(Handle, 20, new[] { 1 }, 4);
+            if (ThemeEditor.UseDarkTopBar && Natives.DwmSetWindowAttribute(Handle, 19, new[] { 1 }, 4) != 0)
+                Natives.DwmSetWindowAttribute(Handle, 20, new[] { 1 }, 4);
         }
 
         public AccountManager()
@@ -109,7 +111,7 @@ namespace RBX_Alt_Manager
 
             SetDarkBar(Handle);
 
-            IniSettings = File.Exists(Path.Combine(Environment.CurrentDirectory, "RAMSettings.ini")) ? new IniFile("RAMSettings.ini") : new IniFile();
+            IniSettings = File.Exists(Path.Combine(Program.DataDirectory.FullName, "RAMSettings.ini")) ? new IniFile("RAMSettings.ini") : new IniFile();
 
             General = IniSettings.Section("General");
             Developer = IniSettings.Section("Developer");
@@ -119,8 +121,7 @@ namespace RBX_Alt_Manager
             Prompts = IniSettings.Section("Prompts");
 
             if (!General.Exists("CheckForUpdates")) General.Set("CheckForUpdates", "true");
-            if (!General.Exists("AccountJoinDelay")) General.Set("AccountJoinDelay", "8");
-            if (!General.Exists("AsyncJoin")) General.Set("AsyncJoin", "false");
+            if (!General.Exists("AccountJoinDelayMS")) General.Set("AccountJoinDelayMS", "2500");
             if (!General.Exists("DisableAgingAlert")) General.Set("DisableAgingAlert", "false");
             if (!General.Exists("SavePasswords")) General.Set("SavePasswords", "true");
             if (!General.Exists("ServerRegionFormat")) General.Set("ServerRegionFormat", "<city>, <countryCode>", "Visit http://ip-api.com/json/1.1.1.1 to see available format options");
@@ -133,7 +134,7 @@ namespace RBX_Alt_Manager
                 General.Set("WindowScale", Screen.PrimaryScreen.Bounds.Height <= Screen.PrimaryScreen.Bounds.Width /*scuffed*/ ? Math.Max(Math.Min(Screen.PrimaryScreen.Bounds.Height / 1080f, 2f), 1f).ToString(".0#", CultureInfo.InvariantCulture) : "1.0");
 
                 if (Program.Scale > 1)
-                    if (!Utilities.YesNoPrompt("Roblox Account Manager", "RAM has detected you have a monitor larger than average", $"Would you like to keep the WindowScale setting of {Program.Scale:F2}?", false))
+                    if (!Utilities.YesNoPrompt("Roblox Account Manager", "Roblox Account Manager has detected you have a monitor larger than average", $"Would you like to keep the WindowScale setting of {Program.Scale:F2}?", false))
                         General.Set("WindowScale", "1.0");
                     else
                         MessageBox.Show("In case the font scaling is incorrect, open RAMSettings.ini and change \"ScaleFonts=true\" to \"ScaleFonts=false\" without the quotes.", "Roblox Account Manager", MessageBoxButtons.OK, MessageBoxIcon.Information);
@@ -142,7 +143,7 @@ namespace RBX_Alt_Manager
             if (!General.Exists("AutoCookieRefresh")) General.Set("AutoCookieRefresh", "true");
             if (!General.Exists("AutoCloseLastProcess")) General.Set("AutoCloseLastProcess", "true");
             if (!General.Exists("ShowPresence")) General.Set("ShowPresence", "true");
-            if (!General.Exists("PresenceUpdateRate")) General.Set("PresenceUpdateRate", "5");
+            if (!General.Exists("PresenceUpdateRate")) General.Set("PresenceUpdateRate", "30");
             if (!General.Exists("UnlockFPS")) General.Set("UnlockFPS", "false");
             if (!General.Exists("MaxFPSValue")) General.Set("MaxFPSValue", "120");
             if (!General.Exists("UseCefSharpBrowser")) General.Set("UseCefSharpBrowser", "false");
@@ -240,8 +241,8 @@ namespace RBX_Alt_Manager
             }
         }
 
-        private readonly static string SaveFilePath = Path.Combine(Environment.CurrentDirectory, "AccountData.json");
-        private readonly static string RecentGamesFilePath = Path.Combine(Environment.CurrentDirectory, "RecentGames.json"); // i shouldve combined everything that isnt accountdata into one file but oh well im too lazy : |
+        private readonly static string SaveFilePath = Path.Combine(Program.DataDirectory.FullName, "AccountData.json");
+        private readonly static string RecentGamesFilePath = Path.Combine(Program.DataDirectory.FullName, "RecentGames.json"); // i shouldve combined everything that isnt accountdata into one file but oh well im too lazy : |
 
         private void RefreshView(object obj = null)
         {
@@ -374,7 +375,7 @@ namespace RBX_Alt_Manager
                     File.WriteAllBytes(SaveFilePath, Cryptography.Encrypt(SaveData, ProtectedData.Unprotect(PasswordHash.ToArray(), Array.Empty<byte>(), DataProtectionScope.CurrentUser)));
                 else
                 {
-                    if (File.Exists(Path.Combine(Environment.CurrentDirectory, "NoEncryption.IUnderstandTheRisks.iautamor")))
+                    if (File.Exists(Path.Combine(AppContext.BaseDirectory, "NoEncryption.IUnderstandTheRisks.iautamor")))
                         File.WriteAllBytes(SaveFilePath, Encoding.UTF8.GetBytes(SaveData));
                     else
                         File.WriteAllBytes(SaveFilePath, ProtectedData.Protect(Encoding.UTF8.GetBytes(SaveData), Entropy, DataProtectionScope.LocalMachine));
@@ -546,6 +547,15 @@ namespace RBX_Alt_Manager
 
         public static bool GetUserID(string Username, out long UserId, out RestResponse response)
         {
+            response = null;
+
+            if (UserIDCache.ContainsKey(Username))
+            {
+                UserId = (long)UserIDCache[Username];
+
+                return true;
+            }
+
             RestRequest request = LastValidAccount?.MakeRequest("v1/usernames/users", Method.Post) ?? new RestRequest("v1/usernames/users", Method.Post);
             request.AddJsonBody(new { usernames = new string[] { Username } });
 
@@ -554,6 +564,8 @@ namespace RBX_Alt_Manager
             if (response.StatusCode == HttpStatusCode.OK && response.Content.TryParseJson(out JObject UserData) && UserData.ContainsKey("data") && UserData["data"].Count() >= 1)
             {
                 UserId = UserData["data"]?[0]?["id"].Value<long>() ?? -1;
+
+                if (UserId > 0) UserIDCache.Add(Username, UserId);
 
                 return true;
             }
@@ -641,10 +653,13 @@ namespace RBX_Alt_Manager
             if (File.Exists(AFN)) File.Delete(AFN);
             if (File.Exists(AU2FN)) File.Delete(AU2FN);
 
-            DirectoryInfo UpdateDir = new DirectoryInfo(Path.Combine(Environment.CurrentDirectory, "Update"));
+            DirectoryInfo UpdateDir = new DirectoryInfo(Path.Combine(Program.DataDirectory.FullName, "Update"));
 
             if (UpdateDir.Exists)
                 UpdateDir.RecursiveDelete();
+
+            PresenceTimer = new System.Timers.Timer(General.Exists("PresenceUpdateRate") ? General.Get<int>("PresenceUpdateRate") * 1000 : 60000 * 2) { Enabled = true };
+            PresenceTimer.Elapsed += (s, e) => AccountsView.InvokeIfRequired(async () => await UpdatePresence());
 
             afform = new ArgumentsForm();
             ServerListForm = new ServerList();
@@ -775,11 +790,13 @@ namespace RBX_Alt_Manager
 
             Task.Run(() =>
             {
+                // TODO: change to https://clientsettings.roblox.com/v2/client-version/WindowsPlayer/channel/<channel>: https://clientsettings.roblox.com/v2/user-channel?binaryType=WindowsPlayer
                 WebClient WC = new WebClient();
                 string VersionJSON = WC.DownloadString("https://clientsettings.roblox.com/v1/client-version/WindowsPlayer");
 
                 if (JObject.Parse(VersionJSON).TryGetValue("clientVersionUpload", out JToken token))
                     CurrentVersion = token.Value<string>();
+                Console.WriteLine($"CurrentVersion: {CurrentVersion}");
             });
 
             IniSettings.Save("RAMSettings.ini");
@@ -799,17 +816,21 @@ namespace RBX_Alt_Manager
                 AutoCookieRefresh = new System.Timers.Timer(60000 * 5) { Enabled = true };
                 AutoCookieRefresh.Elapsed += async (s, e) =>
                 {
+                    string Region = await Utilities.GetRegion();
+
+                    if (string.IsNullOrEmpty(Region)) return;
+
                     int Count = 0;
 
                     foreach (var Account in AccountsList)
                     {
-                        if (Account.GetField("NoCookieRefresh") != "true" && (DateTime.Now - Account.LastUse).TotalDays > 20 && (DateTime.Now - Account.LastAttemptedRefresh).TotalDays >= 7)
+                        if (Account.GetField("NoCookieRefresh") != "true" && Account.Region == Region && (DateTime.Now - Account.LastUse).TotalDays > 20 && (DateTime.Now - Account.LastAttemptedRefresh).TotalDays >= 7)
                         {
                             Program.Logger.Info($"Attempting to refresh {Account.Username} | Last Use: {Account.LastUse}");
 
                             Account.LastAttemptedRefresh = DateTime.Now;
 
-                            if (Account.LogOutOfOtherSessions(true)) Count++;
+                            try { if (Account.LogOutOfOtherSessions(true)) Count++; } catch { }
 
                             await Task.Delay(5000);
                         }
@@ -817,8 +838,13 @@ namespace RBX_Alt_Manager
                 };
             }
 
-            var PresenceTimer = new System.Timers.Timer(60000 * 2) { Enabled = true };
-            PresenceTimer.Elapsed += (s, e) => AccountsView.InvokeIfRequired(async () => await UpdatePresence());
+            if (Environment.OSVersion.Version.Major < 6 || (Environment.OSVersion.Version.Major == 6 && Environment.OSVersion.Version.Minor < 2))
+            {
+                UWPManagerOpen.Visible = false;
+
+                if (General.Get<bool>("HasUWPInstances"))
+                    UWPManagerOpen.PerformClick();
+            }
         }
 
         public void ApplyTheme()
@@ -870,6 +896,8 @@ namespace RBX_Alt_Manager
         {
             await RG.WaitForDetails();
 
+            if (RG.Details == null || RG.Details.placeId <= 0) return;
+
             RecentGames.RemoveAll(g => g?.Details?.placeId == RG.Details?.placeId);
 
             while (RecentGames.Count > General.Get<int>("MaxRecentGames"))
@@ -893,7 +921,7 @@ namespace RBX_Alt_Manager
 
         private readonly List<ServerData> AttemptedJoins = new List<ServerData>();
 
-        private string WebServerResponse(object Message, bool Success) => JsonConvert.SerializeObject(new { Success, Message });
+        private string WebServerResponse(object Message, bool Success) => JsonConvert.SerializeObject(new { Success, Message }, new JsonSerializerSettings { ContractResolver = WebServer.Get<bool>("UseCamelCase") ? new CamelCasePropertyNamesContractResolver() : null });
 
         private string SendResponse(HttpListenerContext Context)
         {
@@ -914,6 +942,8 @@ namespace RBX_Alt_Manager
 
             if (AbsolutePath == "/Running") return Reply("Roblox Account Manager is running", true, Raw: "true");
 
+            WSPassword ??= string.Empty;
+
             string Body = new StreamReader(request.InputStream).ReadToEnd();
             string Method = AbsolutePath.Substring(1);
             string Account = request.QueryString["Account"];
@@ -921,7 +951,7 @@ namespace RBX_Alt_Manager
 
             if (WebServer.Get<bool>("EveryRequestRequiresPassword") && (WSPassword.Length < 6 || Password != WSPassword)) return Reply("Invalid Password, make sure your password contains 6 or more characters", false, 401, "Invalid Password");
 
-            if ((Method == "GetCookie" || Method == "GetAccounts" || Method == "LaunchAccount" || Method == "KillProcess") && (WSPassword.Length < 6 || Password != WSPassword)) return Reply("Invalid Password, make sure your password contains 6 or more characters", false, 401, "Invalid Password");
+            if ((Method == "GetCookie" || Method == "GetAccounts" || Method == "GetAccountsJson" || Method == "LaunchAccount" || Method == "FollowUser") && ( WSPassword.Length < 6 || Password != WSPassword)) return Reply("Invalid Password, make sure your password contains 6 or more characters", false, 401, "Invalid Password");
 
             if (Method == "GetAccounts")
             {
@@ -944,8 +974,10 @@ namespace RBX_Alt_Manager
             {
                 if (!WebServer.Get<bool>("AllowGetAccounts")) return Reply("Method `GetAccountsJson` not allowed", false, 401, "Method not allowed");
 
+
+
                 string GroupFilter = request.QueryString["Group"];
-                bool ShowCookies = WSPassword.Length >= 6 && Password != WSPassword && request.QueryString["IncludeCookies"] == "true" && WebServer.Get<bool>("AllowGetCookie");
+                bool ShowCookies = WSPassword.Length >= 6 && Password == WSPassword && request.QueryString["IncludeCookies"] == "true" && WebServer.Get<bool>("AllowGetCookie");
 
                 List<object> Objects = new List<object>();
 
@@ -981,6 +1013,15 @@ namespace RBX_Alt_Manager
                 return Reply(Success ? "Cookie successfully imported" : "[ImportCookie] An error was encountered importing the cookie", Success, Raw: Success ? "true" : "false");
             }
 
+            if (Method == "GetBrowserTrackerIDs")
+            {
+                string GroupFilter = request.QueryString?["Group"] ?? string.Empty;
+
+                return Reply(JsonConvert.SerializeObject(AccountsList
+                    .Where(acc => string.IsNullOrEmpty(GroupFilter) || acc.Group == GroupFilter)
+                    .ToDictionary(key => key.UserID, v => v.BrowserTrackerID)), true);
+            }
+
             if (string.IsNullOrEmpty(Account)) return Reply("Empty Account", false);
 
             Account account = AccountsList.FirstOrDefault(x => x.Username == Account || x.UserID.ToString() == Account);
@@ -1004,7 +1045,7 @@ namespace RBX_Alt_Manager
                 string FollowUser = request.QueryString["FollowUser"];
                 string JoinVIP = request.QueryString["JoinVIP"];
 
-                string Res = string.Empty; account.JoinServer(PlaceId, JobID, FollowUser == "true", JoinVIP == "true").ContinueWith(result => Res = result.Result).Wait();
+                string Res = string.Empty; account.JoinServer(PlaceId, JobID, FollowUser == "true", JoinVIP == "true").ContinueWith(result => Res = result.Result);
                 bool Success = Res == "Success";
 
                 return Reply(Success ? $"Launched {Account} to {PlaceId}" : Res, Success);
@@ -1019,7 +1060,7 @@ namespace RBX_Alt_Manager
                 if (!GetUserID(User, out long UserId, out var Response))
                     return Reply($"[{Response.StatusCode} {Response.StatusDescription}] Failed to get UserId: {Response.Content}", false);
 
-                string Res = string.Empty; account.JoinServer(UserId, "", true).ContinueWith(result => Res = result.Result).Wait();
+                string Res = string.Empty; account.JoinServer(UserId, "", true).ContinueWith(result => Res = result.Result);
                 bool Success = Res == "Success";
 
                 return Reply($"Joining {User}'s game on {Account}", Success);
@@ -1054,14 +1095,14 @@ namespace RBX_Alt_Manager
                 catch (Exception x) { return Reply(x.Message, false, 500); }
             if (Method == "UnblockEveryone" && account.UnblockEveryone(out string UbRes) is bool UbSuccess) return Reply(UbRes, UbSuccess);
 
-            if (Method == "SetServer" && !string.IsNullOrEmpty(request.QueryString["PlaceId"]) && !string.IsNullOrEmpty(request.QueryString["JobId"]))
+            if (Method == "SetServer" && !string.IsNullOrEmpty(request.QueryString["PlaceId"]) && !string.IsNullOrEmpty(request.QueryString["JobId"])) // currently patched / doesn't work anymore
             {
                 string RSP = account.SetServer(Convert.ToInt64(request.QueryString["PlaceId"]), request.QueryString["JobId"], out bool Success);
 
                 return Reply(RSP, Success);
             }
 
-            if (Method == "SetRecommendedServer")
+            if (Method == "SetRecommendedServer") // currently patched / doesn't work anymore
             {
                 int attempts = 0;
                 string res = "-1";
@@ -1167,7 +1208,7 @@ namespace RBX_Alt_Manager
                 OpenBrowserStrip.Items.Remove(joinGroupToolStripMenuItem);
             }
 
-            if (PuppeteerSupported && (!Directory.Exists(AccountBrowser.Fetcher.DownloadsFolder) || Directory.GetDirectories(AccountBrowser.Fetcher.DownloadsFolder).Length == 0))
+            if (PuppeteerSupported && (!Directory.Exists(AccountBrowser.Fetcher.CacheDir) || Directory.GetDirectories(AccountBrowser.Fetcher.CacheDir).Length == 0))
             {
                 Add.Visible = false;
                 Remove.Visible = false;
@@ -1180,9 +1221,9 @@ namespace RBX_Alt_Manager
 
                     void DownloadProgressChanged(object s, DownloadProgressChangedEventArgs e) => DownloadProgressBar.InvokeIfRequired(() => { DownloadProgressBar.Value = e.ProgressPercentage; });
 
-                    AccountBrowser.Fetcher.DownloadProgressChanged += DownloadProgressChanged;
-                    await AccountBrowser.Fetcher.DownloadAsync(BrowserFetcher.DefaultChromiumRevision);
-                    AccountBrowser.Fetcher.DownloadProgressChanged -= DownloadProgressChanged;
+                    //AccountBrowser.Fetcher.DownloadProgressChanged += DownloadProgressChanged;
+                    await AccountBrowser.Fetcher.DownloadAsync(PuppeteerSharp.BrowserData.Chrome.DefaultBuildId);
+                    //AccountBrowser.Fetcher.DownloadProgressChanged -= DownloadProgressChanged;
 
                     IsDownloadingChromium = false;
 
@@ -1197,7 +1238,7 @@ namespace RBX_Alt_Manager
             }
             else if (!PuppeteerSupported)
             {
-                FileInfo Cef = new FileInfo(Path.Combine(Environment.CurrentDirectory, "x86", "CefSharp.dll"));
+                FileInfo Cef = new FileInfo(Path.Combine(AppContext.BaseDirectory, "x86", "CefSharp.dll"));
 
                 if (Cef.Exists)
                 {
@@ -1207,9 +1248,9 @@ namespace RBX_Alt_Manager
                         try { Directory.GetParent(Cef.FullName).RecursiveDelete(); } catch { }
                 }
 
-                if (!Directory.Exists(Path.Combine(Environment.CurrentDirectory, "x86")))
+                if (!Directory.Exists(Path.Combine(AppContext.BaseDirectory, "x86")))
                 {
-                    var Existing = new DirectoryInfo(Path.Combine(Environment.CurrentDirectory, "x86"));
+                    var Existing = new DirectoryInfo(Path.Combine(AppContext.BaseDirectory, "x86"));
 
                     DLChromiumLabel.Text = "Downloading CefSharp...";
 
@@ -1234,7 +1275,7 @@ namespace RBX_Alt_Manager
 
                         if (Existing.Exists) Existing.RecursiveDelete();
 
-                        System.IO.Compression.ZipFile.ExtractToDirectory(FileName, Environment.CurrentDirectory);
+                        System.IO.Compression.ZipFile.ExtractToDirectory(FileName, AppContext.BaseDirectory);
 
                         IsDownloadingChromium = false;
 
@@ -1315,16 +1356,16 @@ namespace RBX_Alt_Manager
                 try { await new AccountBrowser().Login(); }
                 catch (Exception x)
                 {
-                    Program.Logger.Error($"[Add_Click] An error was encountered attempting to login: {x}");
+                    Program.Logger.Error($"[AccountManager::Add_Click] An error was encountered attempting to login: {x}");
 
                     if (Utilities.YesNoPrompt($"An error was encountered attempting to login", "You may have a corrupted chromium installation", "Would you like to re-install chromium?", false))
                     {
                         MessageBox.Show("Roblox Account Manager will now close since it can't delete the folder while it's in use.", "", MessageBoxButtons.OK, MessageBoxIcon.Information);
 
-                        if (Directory.GetFiles(AccountBrowser.Fetcher.DownloadsFolder).Length <= 1 && Directory.GetDirectories(AccountBrowser.Fetcher.DownloadsFolder).Length <= 1)
-                            Process.Start("cmd.exe", $"/c rmdir /s /q \"{AccountBrowser.Fetcher.DownloadsFolder}\"");
+                        if (Directory.GetFiles(AccountBrowser.Fetcher.CacheDir).Length <= 1 && Directory.GetDirectories(AccountBrowser.Fetcher.CacheDir).Length <= 1)
+                            Process.Start("cmd.exe", $"/c rmdir /s /q \"{AccountBrowser.Fetcher.CacheDir}\"");
                         else
-                            Process.Start("explorer.exe", "/select, " + AccountBrowser.Fetcher.DownloadsFolder);
+                            Process.Start("explorer.exe", "/select, " + AccountBrowser.Fetcher.CacheDir);
 
                         Environment.Exit(0);
                     }
@@ -1342,8 +1383,8 @@ namespace RBX_Alt_Manager
             {
                 string Temp = Path.Combine(Path.GetTempPath(), "manual install instructions.html");
 
-                string DownloadLink = PuppeteerSupported ? (string)typeof(BrowserFetcher).GetMethod("GetDownloadURL", BindingFlags.Static | BindingFlags.NonPublic).Invoke(null, new object[] { AccountBrowser.Fetcher.Product, AccountBrowser.Fetcher.Platform, AccountBrowser.Fetcher.DownloadHost, BrowserFetcher.DefaultChromiumRevision }) : Resources.CefSharpDownload;
-                string Directory = PuppeteerSupported ? Path.Combine(AccountBrowser.Fetcher.DownloadsFolder, $"{AccountBrowser.Fetcher.Platform}-{BrowserFetcher.DefaultChromiumRevision}") : Path.Combine(Environment.CurrentDirectory);
+                string DownloadLink = PuppeteerSupported ? (string)typeof(BrowserFetcher).GetMethod("GetDownloadURL", BindingFlags.Static | BindingFlags.NonPublic).Invoke(null, new object[] { AccountBrowser.Fetcher.Browser, AccountBrowser.Fetcher.Platform, AccountBrowser.Fetcher.BaseUrl, PuppeteerSharp.BrowserData.Chrome.DefaultBuildId}) : Resources.CefSharpDownload;
+                string Directory = PuppeteerSupported ? Path.Combine(AccountBrowser.Fetcher.CacheDir, $"{AccountBrowser.Fetcher.Platform}-{PuppeteerSharp.BrowserData.Chrome.DefaultBuildId}") : Path.Combine(AppContext.BaseDirectory);
 
                 File.WriteAllText(Temp, string.Format(Resources.ManualInstallHTML, PuppeteerSupported ? "Chromium" : "CefSharp", DownloadLink, PuppeteerSupported ? "chrome-win" : "x86", Directory));
 
@@ -1428,11 +1469,16 @@ namespace RBX_Alt_Manager
                 if (AccountsView.SelectedObjects.Count > 1)
                     SelectedAccounts = AccountsView.SelectedObjects.Cast<Account>().ToList();
 
+                SelectedAccountsChanged?.Invoke(this, EventArgs.Empty);
+
                 return;
             }
 
             SelectedAccount = AccountsView.SelectedObject as Account;
             SelectedAccountItem = AccountsView.SelectedItem;
+            SelectedAccounts = new List<Account> { SelectedAccount };
+
+            SelectedAccountsChanged?.Invoke(this, EventArgs.Empty);
 
             if (SelectedAccount == null) return;
 
@@ -1463,19 +1509,31 @@ namespace RBX_Alt_Manager
 
         private void JoinServer_Click(object sender, EventArgs e)
         {
-            Match IDMatch = Regex.Match(PlaceID.Text, @"\/games\/(\d+)[\/|\?]?"); // idiotproofing
+            string NewText = string.Empty;
 
-            if (PlaceID.Text.Contains("privateServerLinkCode") && IDMatch.Success)
-                JobID.Text = PlaceID.Text;
+            if (Uri.TryCreate(PlaceID.Text, UriKind.Absolute, out Uri Link))
+            {
+                if (Link.Segments[1] == "games/" && Link.Segments.Length >= 3)
+                    NewText = Link.Segments[2];
+                else if (Link.Segments[1].StartsWith("share"))
+                {
+                    NewText = "0";
+                    JobID.Text = Link.OriginalString;
+                }
+
+                if (PlaceID.Text.Contains("privateServerLinkCode") && !string.IsNullOrEmpty(NewText))
+                    JobID.Text = PlaceID.Text;
+            }
 
             Game G = RecentGames.FirstOrDefault(RG => RG.Details.filteredName == PlaceID.Text);
 
             if (G != null)
                 PlaceID.Text = G.Details.placeId.ToString();
 
-            PlaceID.Text = IDMatch.Success ? IDMatch.Groups[1].Value : Regex.Replace(PlaceID.Text, "[^0-9]", "");
+            PlaceID.Text = string.IsNullOrEmpty(NewText) ? Regex.Replace(PlaceID.Text, "[^0-9]", "") : NewText;
 
-            bool VIPServer = JobID.TextLength > 4 && JobID.Text.Substring(0, 4) == "VIP:";
+            // bool VIPServer = JobID.TextLength > 4 && JobID.Text.Substring(0, 4) == "VIP:";
+            bool VIPServer = JobID.TextLength > 8 && JobID.Text.StartsWith("Private:");  // .Length > 8 && s.StartsWith("Private:")
 
             if (!long.TryParse(PlaceID.Text, out long PlaceId)) return;
 
@@ -1492,11 +1550,11 @@ namespace RBX_Alt_Manager
                 {
                     LauncherToken = new CancellationTokenSource();
 
-                    await LaunchAccounts(SelectedAccounts, PlaceId, VIPServer ? JobID.Text.Substring(4) : JobID.Text, false, VIPServer);
+                    await LaunchAccounts(SelectedAccounts, PlaceId, VIPServer ? JobID.Text.Substring(8) : JobID.Text, false, VIPServer);
                 }
                 else if (SelectedAccount != null)
                 {
-                    string res = await SelectedAccount.JoinServer(PlaceId, VIPServer ? JobID.Text.Substring(4) : JobID.Text, false, VIPServer);
+                    string res = await SelectedAccount.JoinServer(PlaceId, VIPServer ? JobID.Text.Substring(8) : JobID.Text, false, VIPServer);
 
                     if (!res.Contains("Success"))
                         MessageBox.Show(res);
@@ -1511,9 +1569,9 @@ namespace RBX_Alt_Manager
                 MessageBox.Show($"[{Response.StatusCode} {Response.StatusDescription}] Failed to get UserId: {Response.Content}");
                 return;
             }
-    
+
             if (!(await Presence.GetPresenceSingular(UserId) is UserPresence Status && Status.userPresenceType == UserPresenceType.InGame && Status.placeId is long FollowPlaceID && FollowPlaceID > 0) &&
-                !Utilities.YesNoPrompt("Warning", "The user you are trying to follow is not in game or has their joins off", "Do you want to attempt to join anyways?")) return;
+                !Utilities.YesNoPrompt("Warning", "The user you are trying to follow is not in game or has their joins off", "Do you want to attempt to join anyways?", SaveIfNo: false )) return;
 
             CancelLaunching();
 
@@ -1556,6 +1614,8 @@ namespace RBX_Alt_Manager
         {
             General.Set("HideUsernames", HideUsernamesCheckbox.Checked ? "true" : "false");
 
+            AccountsView.UseFiltering = true;
+            AccountsView.ModelFilter = new ModelFilter(delegate (object o) { Console.WriteLine(o); return (DateTime.Now - (o as Account).LastUse).TotalDays < 30; });
             AccountsView.BeginUpdate();
 
             Username.Width = HideUsernamesCheckbox.Checked ? 0 : (int)(120 * Program.Scale);
@@ -1612,12 +1672,6 @@ namespace RBX_Alt_Manager
 
         private void BrowserButton_Click(object sender, EventArgs e)
         {
-            if (SelectedAccount == null)
-            {
-                MessageBox.Show("No Account Selected!");
-                return;
-            }
-
             UtilsForm.Show();
             UtilsForm.WindowState = FormWindowState.Normal;
             UtilsForm.BringToFront();
@@ -1693,9 +1747,14 @@ namespace RBX_Alt_Manager
         private void copyPasswordToolStripMenuItem_Click(object sender, EventArgs e)
         {
             List<string> Passwords = new List<string>();
+            bool Multiple = AccountsView.SelectedObjects.Count > 1;
 
             foreach (Account account in AccountsView.SelectedObjects)
-                Passwords.Add($"{account.Password}");
+                if (!string.IsNullOrEmpty(account.Password))
+                    Passwords.Add($"{account.Password}");
+
+            if (Passwords.Count == 0)
+                MessageBox.Show($"Selected account{(Multiple ? "s have" : " has")} no password{(Multiple ? "s" : "")} stored.", "Roblox Account Manager", MessageBoxButtons.OK, MessageBoxIcon.Error);
 
             Clipboard.SetText(string.Join("\n", Passwords));
         }
@@ -1725,6 +1784,18 @@ namespace RBX_Alt_Manager
             if (PlaceTimer.Enabled) PlaceTimer.Stop();
 
             PlaceTimer.Start();
+        }
+
+        private void PlaceID_Click(object sender, EventArgs e)
+        {
+            if (PlaceID.SelectedText.Length == 0)
+                PlaceID.SelectAll();
+        }
+
+        private void JobID_Click(object sender, EventArgs e)
+        {
+            if (JobID.SelectedText.Length == 0)
+                JobID.SelectAll();
         }
 
         private async void PlaceTimer_Tick(object sender, EventArgs e)
@@ -1836,7 +1907,8 @@ namespace RBX_Alt_Manager
                 var Size = new System.Numerics.Vector2(550, 440);
                 AccountBrowser.CreateGrid(Size);
 
-                for (int i = 0; i < Math.Min(Count, 15); i++) {
+                for (int i = 0; i < Math.Min(Count, 15); i++)
+                {
                     var Browser = new AccountBrowser() { Size = Size, Index = i };
 
                     _ = Browser.LaunchBrowser(Url: Link.ToString(), Script: Script, PostNavigation: async (p) => await Browser.LoginTask(p));
@@ -2000,9 +2072,8 @@ namespace RBX_Alt_Manager
 
         private async Task LaunchAccounts(List<Account> Accounts, long PlaceID, string JobID, bool FollowUser = false, bool VIPServer = false)
         {
-            int Delay = General.Exists("AccountJoinDelay") ? General.Get<int>("AccountJoinDelay") : 8;
+            int Delay = General.Exists("AccountJoinDelayMS") ? General.Get<int>("AccountJoinDelayMS") : 1200;
 
-            bool AsyncJoin = General.Get<bool>("AsyncJoin");
             CancellationTokenSource Token = LauncherToken;
 
             foreach (Account account in Accounts)
@@ -2020,24 +2091,13 @@ namespace RBX_Alt_Manager
 
                 await account.JoinServer(PlaceId, JobId, FollowUser, VIPServer);
 
-                if (AsyncJoin)
-                {
-                    while (!LaunchNext)
-                        await Task.Delay(50);
-                }
-                else
-                    await Task.Delay(Delay * 1000);
-
-                LaunchNext = false;
+                await Task.Delay(Delay);
             }
-
-            LaunchNext = false;
 
             Token.Cancel();
             Token.Dispose();
         }
 
-        public void NextAccount() => LaunchNext = true;
         public void CancelLaunching()
         {
             if (LauncherToken != null && !LauncherToken.IsCancellationRequested)
@@ -2098,8 +2158,8 @@ namespace RBX_Alt_Manager
 
         private void ShowDetailsToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            if (!Directory.Exists(Path.Combine(Environment.CurrentDirectory, "AccountDumps")))
-                Directory.CreateDirectory(Path.Combine(Environment.CurrentDirectory, "AccountDumps"));
+            if (!Directory.Exists(Path.Combine(Program.DataDirectory.FullName, "AccountDumps")))
+                Directory.CreateDirectory(Path.Combine(Program.DataDirectory.FullName, "AccountDumps"));
 
             foreach (Account Account in AccountsView.SelectedObjects)
             {
@@ -2122,7 +2182,7 @@ namespace RBX_Alt_Manager
                     builder.AppendLine($"Other: {await Account.GetMobileInfo()}");
                     builder.AppendLine($"Fields: {JsonConvert.SerializeObject(Account.Fields)}");
 
-                    string FileName = Path.Combine(Environment.CurrentDirectory, "AccountDumps", Account.Username + ".txt");
+                    string FileName = Path.Combine(Program.DataDirectory.FullName, "AccountDumps", Account.Username + ".txt");
 
                     File.WriteAllText(FileName, builder.ToString());
 
@@ -2135,10 +2195,13 @@ namespace RBX_Alt_Manager
 
         private void AccountsView_Scroll(object sender, ScrollEventArgs e)
         {
-            if (PresenceCancellationToken != null || !General.Get<bool>("ShowPresence"))
+            if (!General.Get<bool>("ShowPresence")) return;
+
+            if (PresenceCancellationToken != null)
                 PresenceCancellationToken.Cancel();
 
             PresenceCancellationToken = new CancellationTokenSource();
+
             var Token = PresenceCancellationToken.Token;
 
             Task.Run(async () =>
@@ -2155,6 +2218,7 @@ namespace RBX_Alt_Manager
         private async Task UpdatePresence()
         {
             if (!General.Get<bool>("ShowPresence")) return;
+            if (AccountsView.IsDisposed) return;
 
             List<Account> VisibleAccounts = new List<Account>();
 
@@ -2170,6 +2234,36 @@ namespace RBX_Alt_Manager
             }
 
             try { await Presence.UpdatePresence(VisibleAccounts.Select(account => account.UserID).ToArray()); } catch { }
+        }
+
+        private void UWPManagerOpen_Click(object sender, EventArgs e) => UWPInstanceManager.Instance.ShowWindow();
+
+        private void AccountManager_Activated(object sender, EventArgs e)
+        {
+            if (Prompts.Exists("VIPToolTipCount") && Prompts.Get<int>("VIPToolTipCount") > 2)
+                return;
+
+            if (Clipboard.ContainsText() && Clipboard.GetText().Contains("?privateServerLinkCode="))
+            {
+                if (Prompts.Exists("VIPToolTipCount") && Prompts.Get<int>("VIPToolTipCount") is int Count)
+                    Prompts.Set("VIPToolTipCount", $"{Count + 1}");
+                else
+                    Prompts.Set("VIPToolTipCount", "1");
+
+                SaveTooltip.Show("Looking to join a private server?\nPaste the entire link into the 'PlaceId' box.", PlaceID);
+            }
+        }
+
+        private void PlaceID_MouseClick(object sender, MouseEventArgs e)
+        {
+            if (PlaceID.SelectionLength == 0 && PlaceID.SelectionStart == PlaceID.TextLength)
+                PlaceID.SelectAll();
+        }
+
+        private void JobID_MouseClick(object sender, MouseEventArgs e)
+        {
+            if (JobID.SelectionLength == 0 && JobID.SelectionStart == JobID.TextLength)                
+                JobID.SelectAll();
         }
     }
 }

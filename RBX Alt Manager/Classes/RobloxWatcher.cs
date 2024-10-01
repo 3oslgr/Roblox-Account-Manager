@@ -12,22 +12,7 @@ namespace RBX_Alt_Manager.Classes
 {
     internal class RobloxWatcher
     {
-        [DllImport("user32.dll")]
-        static extern IntPtr GetForegroundWindow();
-
-        [DllImport("user32.dll", SetLastError = true)]
-        static extern bool GetWindowRect(IntPtr hWnd, out RECT lpRect);
-
-        [StructLayout(LayoutKind.Sequential)]
-        public struct RECT
-        {
-            public int Left;
-            public int Top;
-            public int Right;
-            public int Bottom;
-        }
-
-        public static readonly string HandlePath = Path.Combine(Environment.CurrentDirectory, "handle.bin");
+        public static readonly string HandlePath = Path.Combine(AppContext.BaseDirectory, "handle.bin");
 
         public static HashSet<int> Seen = new HashSet<int>();
         public static List<RobloxProcess> Instances = new List<RobloxProcess>();
@@ -58,7 +43,7 @@ namespace RBX_Alt_Manager.Classes
 
         public static void CheckProcesses()
         {
-            IntPtr Focused = GetForegroundWindow();
+            IntPtr Focused = Natives.GetForegroundWindow();
 
             foreach (var process in Process.GetProcessesByName("RobloxPlayerBeta"))
             {
@@ -84,7 +69,7 @@ namespace RBX_Alt_Manager.Classes
                             Kill($"Window Title isn't {ExpectedWindowTitle}, got {process.MainWindowTitle}");
                     }
                 }
-                catch (Exception x) { Program.Logger.Error($"Error with checking for Memory & Window Title: {x.Message}\n{x.StackTrace}"); }
+                catch (Exception x) { Program.Logger.Error($"[RobloxWatcher::CheckProcesses] Error with checking for Memory & Window Title: {x.Message}\n{x.StackTrace}"); }
 
                 if (RememberWindowPositions && (DateTime.Now - process.StartTime).TotalSeconds > 30)
                 {
@@ -94,7 +79,7 @@ namespace RBX_Alt_Manager.Classes
                     if (AccountManager.AccountsList.FirstOrDefault(Account => Account.BrowserTrackerID == TrackerID) is Account account)
                         try
                         {
-                            GetWindowRect(process.MainWindowHandle, out RECT rect);
+                            Natives.GetWindowRect(process.MainWindowHandle, out Natives.RECT rect);
 
                             account.SetField("Window_Position_X", $"{rect.Left:0}");
                             account.SetField("Window_Position_Y", $"{rect.Top:0}");
@@ -113,7 +98,7 @@ namespace RBX_Alt_Manager.Classes
                     Instances.Add(new RobloxProcess(process));
                     Seen.Add(process.Id);
                 }
-                catch (Exception x) { Program.Logger.Error($"Access to Process {process.Id} denied! This may be due to roblox being ran as admin or roblox's second process(This message can be ignored): {x.Message}"); }
+                catch (Exception x) { Program.Logger.Error($"[RobloxWatcher::CheckProcesses] Access to Process {process.Id} denied! This may be due to roblox being ran as admin or roblox's second process(This message can be ignored): {x.Message}"); }
             }
         }
 

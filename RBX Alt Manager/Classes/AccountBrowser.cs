@@ -1,13 +1,15 @@
 ﻿using CefSharp;
 using CefSharp.WinForms;
 using Newtonsoft.Json.Linq;
+using PuppeteerSharp;
 using PuppeteerExtraSharp;
 using PuppeteerExtraSharp.Plugins.ExtraStealth;
-using PuppeteerSharp;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Management;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Json;
@@ -22,7 +24,7 @@ namespace RBX_Alt_Manager.Classes
 {
     internal class AccountBrowser
     {
-        public static BrowserFetcher Fetcher = new BrowserFetcher(Product.Chrome);
+        public static BrowserFetcher Fetcher = new BrowserFetcher(SupportedBrowser.Chrome);
 
         private static Dictionary<int, Vector2> ScreenGrid;
 
@@ -63,8 +65,8 @@ namespace RBX_Alt_Manager.Classes
 
             List<string> Args = new List<string>(Arguments ?? new string[] { "--disable-web-security" });
 
-            string ExtensionPath = Path.Combine(Environment.CurrentDirectory, "extension");
-            string ConfigPath = Path.Combine(Environment.CurrentDirectory, "BrowserConfig.json");
+            string ExtensionPath = Path.Combine(AppContext.BaseDirectory, "extension");
+            string ConfigPath = Path.Combine(AppContext.BaseDirectory, "BrowserConfig.json");
             BrowserConfig Config = null;
 
             if (Directory.Exists(ExtensionPath))
@@ -77,11 +79,11 @@ namespace RBX_Alt_Manager.Classes
             if (Arguments == null)
                 Args.AddRange(new string[] { $"--window-size=\"{(int)Size.X},{(int)Size.Y}\"", $"--window-position=\"{(int)Position.X},{(int)Position.Y}\"" });
 
-            string ProxiesPath = Path.Combine(Environment.CurrentDirectory, "proxies.txt");
+            string ProxiesPath = Path.Combine(AppContext.BaseDirectory, "proxies.txt");
             string ProxyString = string.Empty, Username = string.Empty, Password = string.Empty;
 
             if (AccountManager.General.Get<bool>("UseProxies") && File.Exists(ProxiesPath))
-            { // Format: [optional protocol://]ip:port@user:pass / socks5://1.2.3.4:999@user:pass
+            { // Format: [optional protocol/defaults to http://]user:pass@ip:port / socks5://user:pass@1.2.3.4:999
                 Random Rng = new Random();
                 int Timeout = AccountManager.General.Exists("ProxyTimeout") ? AccountManager.General.Get<int>("ProxyTimeout") : 3000;
                 int Limit = AccountManager.General.Exists("ProxyTestLimit") ? AccountManager.General.Get<int>("ProxyTestLimit") : 10;
@@ -95,30 +97,25 @@ namespace RBX_Alt_Manager.Classes
 
                     ProxyString = Proxies[i];
 
-                    string _Proxy = ProxyString;
+                    if (!ProxyString.Contains("://"))
+                        ProxyString = $"http://{ProxyString}";
 
-                    if (_Proxy.Contains("://"))
-                        _Proxy = _Proxy.Substring(_Proxy.IndexOf("://") + 3);
+                    Uri ProxyUri = new Uri(ProxyString);
 
-                    Uri ProxyUrl = new Uri($"http://{(_Proxy.Contains("@") ? _Proxy.Substring(0, _Proxy.IndexOf('@')) : _Proxy)}");
-
-                    if (ProxyString.Contains("@") && ProxyString.Substring(ProxyString.IndexOf('@')).Contains(':'))
+                    if (ProxyUri.UserInfo.Contains(':'))
                     {
-                        string Combo = ProxyString.Substring(ProxyString.IndexOf('@') + 1);
-
-                        ProxyString = ProxyString.Substring(0, ProxyString.IndexOf('@'));
-                        Username = Combo.Substring(0, Combo.IndexOf(':'));
-                        Password = Combo.Substring(Combo.IndexOf(':') + 1);
+                        Username = ProxyUri.UserInfo.Split(':')[0];
+                        Password = ProxyUri.UserInfo.Split(':')[1];
                     }
 
                     ProxyType Protocol = ProxyType.Http;
 
-                    if (ProxyString.StartsWith("socks5://"))
+                    if (ProxyUri.Scheme == "socks5")
                         Protocol = ProxyType.Socks5;
-                    else if (ProxyString.StartsWith("socks4://"))
+                    else if (ProxyUri.Scheme == "socks4")
                         Protocol = ProxyType.Socks4;
 
-                    Proxy = new ProxyClient(ProxyUrl.Host, ProxyUrl.Port, Username, Password, Protocol);
+                    Proxy = new ProxyClient(ProxyUri.Host, ProxyUri.Port, Username, Password, Protocol);
 
                     using (var Handler = new HttpClientHandler() { Proxy = Proxy })
                     using (var Client = new HttpClient(Handler) { Timeout = TimeSpan.FromMilliseconds(Timeout) })
@@ -138,9 +135,9 @@ namespace RBX_Alt_Manager.Classes
                 }
             }
 
-            var Options = new LaunchOptions { Headless = false, DefaultViewport = null, Args = Args.ToArray(), IgnoreHTTPSErrors = true };
+            var Options = new LaunchOptions { Headless = false, DefaultViewport = null, Args = Args.ToArray() };
 
-            await Fetcher.DownloadAsync(BrowserFetcher.DefaultChromiumRevision);
+            await Fetcher.DownloadAsync(PuppeteerSharp.BrowserData.Chrome.DefaultBuildId);
 
             browser = (Browser)await new PuppeteerExtra().Use(new StealthPlugin()).LaunchAsync(Options);
             page = (Page)(await browser.PagesAsync())[0];
@@ -194,9 +191,10 @@ namespace RBX_Alt_Manager.Classes
 
                 if (!string.IsNullOrEmpty(Username) && !string.IsNullOrEmpty(Password)) await page.ClickAsync("#login-button");
             }
-            catch (Exception ex) { Program.Logger.Error($"An exception was caught while trying to automatically log in: {ex}"); }
+            catch (Exception ex) { Program.Logger.Error($"[AccountBrowser::LoginTask] An exception was caught while trying to automatically log in: {ex}"); }
         }
 
+        [Obsolete]
         private async void Page_FrameAttached(object sender, FrameEventArgs e)
         {
             if (!AccountManager.General.Exists("NopechaKey")) return;
@@ -302,13 +300,13 @@ namespace RBX_Alt_Manager.Classes
 
         private async void Page_RequestFinished(object sender, RequestEventArgs e)
         {
-            Uri Url = new Uri(e.Request.Url);
+            if (e.Request == null || string.IsNullOrEmpty(e.Request.Url) || !Uri.TryCreate(e.Request.Url, UriKind.Absolute, out Uri Url)) return;
 
-            if (e.Request.Response.Status == HttpStatusCode.OK && e.Request.Method == HttpMethod.Post && Url.Host == "auth.roblox.com")
+            if (e.Request.Response?.Status == HttpStatusCode.OK && e.Request.Method == HttpMethod.Post && Url.Host == "auth.roblox.com")
             {
                 if ((Url.AbsolutePath == "/v2/login" || Url.AbsolutePath == "/v2/signup") && e.Request.PostData != null && Utilities.TryParseJson((string)e.Request.PostData, out JObject LoginData))
                 {
-                    if (LoginData?["password"]?.Value<string>() is string password && !string.IsNullOrEmpty(password) && LoginData?["ctype"].Value<string>() is string loginType && loginType.ToLowerInvariant() == "username")
+                    if (LoginData?["password"]?.Value<string>() is string password && !string.IsNullOrEmpty(password) && (!LoginData.ContainsKey("ctype") || (LoginData?["ctype"]?.Value<string>() is string loginType && loginType.ToLowerInvariant() == "username")))
                         Password = password;
 
                     if ((await page.GetCookiesAsync("https://roblox.com/")).FirstOrDefault(Cookie => Cookie.Name == ".ROBLOSECURITY") is CookieParam Cookie)
@@ -342,6 +340,19 @@ namespace RBX_Alt_Manager.Classes
                 for (int y = 0; y < SystemInformation.VirtualScreen.Height - (Size.Y / 2); y += (int)Size.Y)
                     ScreenGrid.Add(ScreenGrid.Count, new Vector2(x, y));
         }
+
+        public static void KillBrowsers()
+        {
+            int CurrentID = Process.GetCurrentProcess().Id;
+
+            ManagementObjectSearcher searcher = new ManagementObjectSearcher($"SELECT * FROM Win32_Process WHERE ParentProcessId={CurrentID}");
+            ManagementObjectCollection collection = searcher.Get();
+
+            if (collection.Count > 0)
+                foreach (var proc in collection)
+                    if (proc["ProcessId"] is uint PID && PID != CurrentID && (string)proc["Name"] == "chrome.exe")
+                        try { Process.GetProcessById((int)PID).Kill(); } catch { }
+        }
     }
 
     internal class CefBrowser : Form
@@ -362,8 +373,8 @@ namespace RBX_Alt_Manager.Classes
 
         private CefBrowser(string Url = "https://roblox.com/")
         {
-            if (!Directory.Exists(Path.Combine(Environment.CurrentDirectory, "x86"))) throw new DirectoryNotFoundException("Unable to locate CefSharp dependency folder");
-            if (!File.Exists(Path.Combine(Environment.CurrentDirectory, "x86", "CefSharp.dll"))) throw new FileNotFoundException("Unable to locate CefSharp.dll");
+            if (!Directory.Exists(Path.Combine(AppContext.BaseDirectory, "x86"))) throw new DirectoryNotFoundException("Unable to locate CefSharp dependency folder");
+            if (!File.Exists(Path.Combine(AppContext.BaseDirectory, "x86", "CefSharp.dll"))) throw new FileNotFoundException("Unable to locate CefSharp.dll");
 
             Size = new System.Drawing.Size(880, 740);
 

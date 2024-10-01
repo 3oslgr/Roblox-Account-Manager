@@ -75,18 +75,16 @@ namespace RBX_Alt_Manager
             this.CurrentPlace = new System.Windows.Forms.Label();
             this.LabelPlaceID = new System.Windows.Forms.Label();
             this.PlaceTimer = new System.Windows.Forms.Timer(this.components);
-            this.JoinDiscord = new System.Windows.Forms.Button();
             this.OpenBrowserStrip = new System.Windows.Forms.ContextMenuStrip(this.components);
             this.customURLToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.URLJSToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.joinGroupToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.SaveToAccount = new System.Windows.Forms.Button();
             this.SaveTooltip = new System.Windows.Forms.ToolTip(this.components);
             this.ShuffleIcon = new System.Windows.Forms.PictureBox();
             this.DefaultEncryptionButton = new System.Windows.Forms.Button();
             this.PasswordEncryptionButton = new System.Windows.Forms.Button();
             this.JobID = new RBX_Alt_Manager.Classes.BorderedTextBox();
-            this.DonateButton = new System.Windows.Forms.Button();
+            this.PlaceID = new RBX_Alt_Manager.Classes.BorderedTextBox();
             this.AccountsView = new BrightIdeasSoftware.ObjectListView();
             this.Username = ((BrightIdeasSoftware.OLVColumn)(new BrightIdeasSoftware.OLVColumn()));
             this.AccountAlias = ((BrightIdeasSoftware.OLVColumn)(new BrightIdeasSoftware.OLVColumn()));
@@ -95,7 +93,6 @@ namespace RBX_Alt_Manager
             this.LastUsedColumn = ((BrightIdeasSoftware.OLVColumn)(new BrightIdeasSoftware.OLVColumn()));
             this.EditTheme = new System.Windows.Forms.Button();
             this.LaunchNexus = new System.Windows.Forms.Button();
-            this.ConfigButton = new System.Windows.Forms.Button();
             this.HistoryIcon = new System.Windows.Forms.PictureBox();
             this.PasswordPanel = new System.Windows.Forms.Panel();
             this.PasswordLayoutPanel = new System.Windows.Forms.TableLayoutPanel();
@@ -112,12 +109,16 @@ namespace RBX_Alt_Manager
             this.DownloadProgressBar = new System.Windows.Forms.ProgressBar();
             this.PresenceUpdateTimer = new System.Windows.Forms.Timer(this.components);
             this.DLChromiumLabel = new System.Windows.Forms.Label();
+            this.UWPManagerOpen = new System.Windows.Forms.Button();
+            this.ConfigButton = new System.Windows.Forms.PictureBox();
+            this.DonateButton = new System.Windows.Forms.PictureBox();
+            this.JoinDiscord = new System.Windows.Forms.PictureBox();
+            this.SaveToAccount = new System.Windows.Forms.PictureBox();
             this.Add = new RBX_Alt_Manager.Classes.MenuButton();
             this.OpenBrowser = new RBX_Alt_Manager.Classes.MenuButton();
             this.UserID = new RBX_Alt_Manager.Classes.BorderedTextBox();
             this.Alias = new RBX_Alt_Manager.Classes.BorderedTextBox();
             this.DescriptionBox = new RBX_Alt_Manager.Classes.BorderedRichTextBox();
-            this.PlaceID = new RBX_Alt_Manager.Classes.BorderedTextBox();
             this.AddAccountsStrip.SuspendLayout();
             this.AccountsStrip.SuspendLayout();
             this.OpenBrowserStrip.SuspendLayout();
@@ -128,6 +129,10 @@ namespace RBX_Alt_Manager
             this.PasswordLayoutPanel.SuspendLayout();
             this.PasswordSelectionPanel.SuspendLayout();
             this.EncryptionSelectionPanel.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.ConfigButton)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.DonateButton)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.JoinDiscord)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.SaveToAccount)).BeginInit();
             this.SuspendLayout();
             // 
             // LabelJobID
@@ -430,7 +435,7 @@ namespace RBX_Alt_Manager
             // 
             this.copySecurityTokenToolStripMenuItem.Name = "copySecurityTokenToolStripMenuItem";
             this.copySecurityTokenToolStripMenuItem.Size = new System.Drawing.Size(208, 22);
-            this.copySecurityTokenToolStripMenuItem.Text = "Copy Security Token";
+            this.copySecurityTokenToolStripMenuItem.Text = "Copy Cookie";
             this.copySecurityTokenToolStripMenuItem.Click += new System.EventHandler(this.copySecurityTokenToolStripMenuItem_Click);
             // 
             // copyRbxplayerLinkToolStripMenuItem
@@ -473,7 +478,7 @@ namespace RBX_Alt_Manager
             // ArgumentsB
             // 
             this.ArgumentsB.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.ArgumentsB.Location = new System.Drawing.Point(691, 7);
+            this.ArgumentsB.Location = new System.Drawing.Point(692, 7);
             this.ArgumentsB.Name = "ArgumentsB";
             this.ArgumentsB.Size = new System.Drawing.Size(23, 23);
             this.ArgumentsB.TabIndex = 5;
@@ -507,18 +512,6 @@ namespace RBX_Alt_Manager
             this.PlaceTimer.Interval = 400;
             this.PlaceTimer.Tick += new System.EventHandler(this.PlaceTimer_Tick);
             // 
-            // JoinDiscord
-            // 
-            this.JoinDiscord.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
-            this.JoinDiscord.Image = global::RBX_Alt_Manager.Properties.Resources.disc;
-            this.JoinDiscord.Location = new System.Drawing.Point(474, 266);
-            this.JoinDiscord.Name = "JoinDiscord";
-            this.JoinDiscord.Size = new System.Drawing.Size(23, 23);
-            this.JoinDiscord.TabIndex = 19;
-            this.JoinDiscord.TextAlign = System.Drawing.ContentAlignment.BottomCenter;
-            this.JoinDiscord.UseVisualStyleBackColor = true;
-            this.JoinDiscord.Click += new System.EventHandler(this.JoinDiscord_Click);
-            // 
             // OpenBrowserStrip
             // 
             this.OpenBrowserStrip.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
@@ -548,21 +541,6 @@ namespace RBX_Alt_Manager
             this.joinGroupToolStripMenuItem.Size = new System.Drawing.Size(160, 22);
             this.joinGroupToolStripMenuItem.Text = "Join Group";
             this.joinGroupToolStripMenuItem.Click += new System.EventHandler(this.joinGroupToolStripMenuItem_Click);
-            // 
-            // SaveToAccount
-            // 
-            this.SaveToAccount.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.SaveToAccount.FlatAppearance.BorderSize = 0;
-            this.SaveToAccount.Image = ((System.Drawing.Image)(resources.GetObject("SaveToAccount.Image")));
-            this.SaveToAccount.ImageAlign = System.Drawing.ContentAlignment.BottomRight;
-            this.SaveToAccount.Location = new System.Drawing.Point(750, 42);
-            this.SaveToAccount.Name = "SaveToAccount";
-            this.SaveToAccount.Size = new System.Drawing.Size(22, 22);
-            this.SaveToAccount.TabIndex = 3;
-            this.SaveTooltip.SetToolTip(this.SaveToAccount, "Saves the PlaceId + JobId to the selected account\r\nTo remove, clear out the text " +
-        "boxes on the left and click Save");
-            this.SaveToAccount.UseVisualStyleBackColor = true;
-            this.SaveToAccount.Click += new System.EventHandler(this.SaveToAccount_Click);
             // 
             // SaveTooltip
             // 
@@ -630,19 +608,19 @@ namespace RBX_Alt_Manager
             this.JobID.TabIndex = 2;
             this.SaveTooltip.SetToolTip(this.JobID, "Job ID is a unique ID assigned to every roblox server.\r\nYou may also put a Privat" +
         "e Server link in this box to join it.");
+            this.JobID.MouseClick += new System.Windows.Forms.MouseEventHandler(this.JobID_MouseClick);
             // 
-            // DonateButton
+            // PlaceID
             // 
-            this.DonateButton.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.DonateButton.FlatAppearance.BorderSize = 0;
-            this.DonateButton.Image = global::RBX_Alt_Manager.Properties.Resources.donation;
-            this.DonateButton.ImageAlign = System.Drawing.ContentAlignment.BottomRight;
-            this.DonateButton.Location = new System.Drawing.Point(750, 6);
-            this.DonateButton.Name = "DonateButton";
-            this.DonateButton.Size = new System.Drawing.Size(24, 24);
-            this.DonateButton.TabIndex = 1001;
-            this.DonateButton.UseVisualStyleBackColor = true;
-            this.DonateButton.Click += new System.EventHandler(this.DonateButton_Click);
+            this.PlaceID.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.PlaceID.BorderColor = System.Drawing.Color.FromArgb(((int)(((byte)(0)))), ((int)(((byte)(122)))), ((int)(((byte)(122)))), ((int)(((byte)(122)))));
+            this.PlaceID.Location = new System.Drawing.Point(504, 43);
+            this.PlaceID.Name = "PlaceID";
+            this.PlaceID.Size = new System.Drawing.Size(78, 20);
+            this.PlaceID.TabIndex = 1;
+            this.PlaceID.Text = "5315046213";
+            this.PlaceID.MouseClick += new System.Windows.Forms.MouseEventHandler(this.PlaceID_MouseClick);
+            this.PlaceID.TextChanged += new System.EventHandler(this.PlaceID_TextChanged);
             // 
             // AccountsView
             // 
@@ -739,19 +717,6 @@ namespace RBX_Alt_Manager
             this.LaunchNexus.Text = "Account Control";
             this.LaunchNexus.UseVisualStyleBackColor = true;
             this.LaunchNexus.Click += new System.EventHandler(this.LaunchNexus_Click);
-            // 
-            // ConfigButton
-            // 
-            this.ConfigButton.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.ConfigButton.FlatAppearance.BorderSize = 0;
-            this.ConfigButton.Image = global::RBX_Alt_Manager.Properties.Resources.configIcon;
-            this.ConfigButton.ImageAlign = System.Drawing.ContentAlignment.BottomRight;
-            this.ConfigButton.Location = new System.Drawing.Point(720, 6);
-            this.ConfigButton.Name = "ConfigButton";
-            this.ConfigButton.Size = new System.Drawing.Size(24, 24);
-            this.ConfigButton.TabIndex = 1002;
-            this.ConfigButton.UseVisualStyleBackColor = true;
-            this.ConfigButton.Click += new System.EventHandler(this.ConfigButton_Click);
             // 
             // HistoryIcon
             // 
@@ -982,6 +947,66 @@ namespace RBX_Alt_Manager
             this.DLChromiumLabel.Visible = false;
             this.DLChromiumLabel.Click += new System.EventHandler(this.DLChromiumLabel_Click);
             // 
+            // UWPManagerOpen
+            // 
+            this.UWPManagerOpen.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.UWPManagerOpen.FlatAppearance.BorderSize = 0;
+            this.UWPManagerOpen.ImageAlign = System.Drawing.ContentAlignment.BottomRight;
+            this.UWPManagerOpen.Location = new System.Drawing.Point(645, 7);
+            this.UWPManagerOpen.Name = "UWPManagerOpen";
+            this.UWPManagerOpen.Size = new System.Drawing.Size(41, 23);
+            this.UWPManagerOpen.TabIndex = 1007;
+            this.UWPManagerOpen.Text = "UWP";
+            this.UWPManagerOpen.UseVisualStyleBackColor = true;
+            this.UWPManagerOpen.Click += new System.EventHandler(this.UWPManagerOpen_Click);
+            // 
+            // ConfigButton
+            // 
+            this.ConfigButton.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.ConfigButton.Image = global::RBX_Alt_Manager.Properties.Resources.config;
+            this.ConfigButton.Location = new System.Drawing.Point(722, 8);
+            this.ConfigButton.Name = "ConfigButton";
+            this.ConfigButton.Size = new System.Drawing.Size(20, 20);
+            this.ConfigButton.SizeMode = System.Windows.Forms.PictureBoxSizeMode.Zoom;
+            this.ConfigButton.TabIndex = 1008;
+            this.ConfigButton.TabStop = false;
+            this.ConfigButton.Click += new System.EventHandler(this.ConfigButton_Click);
+            // 
+            // DonateButton
+            // 
+            this.DonateButton.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.DonateButton.Image = global::RBX_Alt_Manager.Properties.Resources.donate;
+            this.DonateButton.Location = new System.Drawing.Point(750, 8);
+            this.DonateButton.Name = "DonateButton";
+            this.DonateButton.Size = new System.Drawing.Size(20, 20);
+            this.DonateButton.SizeMode = System.Windows.Forms.PictureBoxSizeMode.Zoom;
+            this.DonateButton.TabIndex = 1009;
+            this.DonateButton.TabStop = false;
+            this.DonateButton.Click += new System.EventHandler(this.DonateButton_Click);
+            // 
+            // JoinDiscord
+            // 
+            this.JoinDiscord.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
+            this.JoinDiscord.Image = global::RBX_Alt_Manager.Properties.Resources.discord;
+            this.JoinDiscord.Location = new System.Drawing.Point(474, 267);
+            this.JoinDiscord.Name = "JoinDiscord";
+            this.JoinDiscord.Size = new System.Drawing.Size(21, 21);
+            this.JoinDiscord.SizeMode = System.Windows.Forms.PictureBoxSizeMode.Zoom;
+            this.JoinDiscord.TabIndex = 1010;
+            this.JoinDiscord.TabStop = false;
+            // 
+            // SaveToAccount
+            // 
+            this.SaveToAccount.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.SaveToAccount.Image = global::RBX_Alt_Manager.Properties.Resources.save;
+            this.SaveToAccount.Location = new System.Drawing.Point(750, 44);
+            this.SaveToAccount.Name = "SaveToAccount";
+            this.SaveToAccount.Size = new System.Drawing.Size(18, 18);
+            this.SaveToAccount.SizeMode = System.Windows.Forms.PictureBoxSizeMode.Zoom;
+            this.SaveToAccount.TabIndex = 1011;
+            this.SaveToAccount.TabStop = false;
+            this.SaveToAccount.Click += new System.EventHandler(this.SaveToAccount_Click);
+            // 
             // Add
             // 
             this.Add.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
@@ -1036,35 +1061,25 @@ namespace RBX_Alt_Manager
             this.DescriptionBox.TabIndex = 11;
             this.DescriptionBox.Text = "Description";
             // 
-            // PlaceID
-            // 
-            this.PlaceID.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.PlaceID.BorderColor = System.Drawing.Color.FromArgb(((int)(((byte)(0)))), ((int)(((byte)(122)))), ((int)(((byte)(122)))), ((int)(((byte)(122)))));
-            this.PlaceID.Location = new System.Drawing.Point(504, 43);
-            this.PlaceID.Name = "PlaceID";
-            this.PlaceID.Size = new System.Drawing.Size(78, 20);
-            this.PlaceID.TabIndex = 1;
-            this.PlaceID.Text = "5315046213";
-            this.PlaceID.TextChanged += new System.EventHandler(this.PlaceID_TextChanged);
-            // 
             // AccountManager
             // 
             this.AllowDrop = true;
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(784, 301);
+            this.Controls.Add(this.SaveToAccount);
+            this.Controls.Add(this.JoinDiscord);
+            this.Controls.Add(this.DonateButton);
+            this.Controls.Add(this.ConfigButton);
+            this.Controls.Add(this.UWPManagerOpen);
             this.Controls.Add(this.Remove);
             this.Controls.Add(this.Add);
             this.Controls.Add(this.DLChromiumLabel);
             this.Controls.Add(this.ShuffleIcon);
             this.Controls.Add(this.HistoryIcon);
-            this.Controls.Add(this.ConfigButton);
             this.Controls.Add(this.LaunchNexus);
-            this.Controls.Add(this.DonateButton);
             this.Controls.Add(this.EditTheme);
-            this.Controls.Add(this.SaveToAccount);
             this.Controls.Add(this.OpenBrowser);
-            this.Controls.Add(this.JoinDiscord);
             this.Controls.Add(this.CurrentPlace);
             this.Controls.Add(this.ArgumentsB);
             this.Controls.Add(this.BrowserButton);
@@ -1091,6 +1106,7 @@ namespace RBX_Alt_Manager
             this.MinimumSize = new System.Drawing.Size(800, 340);
             this.Name = "AccountManager";
             this.Text = "Roblox Account Manager";
+            this.Activated += new System.EventHandler(this.AccountManager_Activated);
             this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.AccountManager_FormClosing);
             this.Load += new System.EventHandler(this.AccountManager_Load);
             this.Shown += new System.EventHandler(this.AccountManager_Shown);
@@ -1107,6 +1123,10 @@ namespace RBX_Alt_Manager
             this.PasswordSelectionPanel.PerformLayout();
             this.EncryptionSelectionPanel.ResumeLayout(false);
             this.EncryptionSelectionPanel.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.ConfigButton)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.DonateButton)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.JoinDiscord)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.SaveToAccount)).EndInit();
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -1144,11 +1164,9 @@ namespace RBX_Alt_Manager
         private System.Windows.Forms.ToolStripMenuItem moveGroupUpToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem moveToToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem copyAppLinkToolStripMenuItem;
-        private System.Windows.Forms.Button JoinDiscord;
         private MenuButton OpenBrowser;
         private System.Windows.Forms.ToolStripMenuItem copyProfileToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem viewFieldsToolStripMenuItem;
-        private System.Windows.Forms.Button SaveToAccount;
         private System.Windows.Forms.ToolTip SaveTooltip;
         public BrightIdeasSoftware.ObjectListView AccountsView;
         private BrightIdeasSoftware.OLVColumn Group;
@@ -1160,10 +1178,8 @@ namespace RBX_Alt_Manager
         private System.Windows.Forms.Button EditTheme;
         private System.Windows.Forms.ToolStripMenuItem groupsToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem infoToolStripMenuItem1;
-        private System.Windows.Forms.Button DonateButton;
         private System.Windows.Forms.Button LaunchNexus;
         private System.Windows.Forms.ToolStripMenuItem copyPasswordToolStripMenuItem;
-        private System.Windows.Forms.Button ConfigButton;
         private System.Windows.Forms.ToolStripMenuItem copyToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem copyUserIdToolStripMenuItem;
         private System.Windows.Forms.PictureBox HistoryIcon;
@@ -1199,5 +1215,10 @@ namespace RBX_Alt_Manager
         private System.Windows.Forms.ToolStripMenuItem customURLJSToolStripMenuItem;
         private System.Windows.Forms.ProgressBar DownloadProgressBar;
         private System.Windows.Forms.Label DLChromiumLabel;
+        private System.Windows.Forms.Button UWPManagerOpen;
+        private System.Windows.Forms.PictureBox ConfigButton;
+        private System.Windows.Forms.PictureBox DonateButton;
+        private System.Windows.Forms.PictureBox JoinDiscord;
+        private System.Windows.Forms.PictureBox SaveToAccount;
     }
 }

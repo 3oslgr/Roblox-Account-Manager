@@ -28,7 +28,7 @@
         /// </summary>
         private void InitializeComponent()
         {
-            this.Accounts = new System.Windows.Forms.RichTextBox();
+            this.Accounts = new RBX_Alt_Manager.Classes.BorderedRichTextBox();
             this.label1 = new System.Windows.Forms.Label();
             this.ImportButton = new System.Windows.Forms.Button();
             this.SuspendLayout();
@@ -38,6 +38,7 @@
             this.Accounts.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
             | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
+            this.Accounts.DetectUrls = false;
             this.Accounts.Location = new System.Drawing.Point(12, 25);
             this.Accounts.Name = "Accounts";
             this.Accounts.Size = new System.Drawing.Size(573, 137);

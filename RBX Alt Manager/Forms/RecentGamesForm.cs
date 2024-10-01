@@ -28,7 +28,9 @@ namespace RBX_Alt_Manager.Forms
 
         public void LoadGames(List<Game> Games)
         {
-            for (int i = Games.Count - 1; i >= 0; i--) //            foreach (Game game in Games)
+            if (Games == null || Games.Count == 0) return;
+
+            for (int i = Games.Count - 1; i >= 0; i--)
                 AddGameControl(Games[i]);
         }
 

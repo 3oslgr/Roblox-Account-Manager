@@ -25,9 +25,9 @@ namespace RBX_Alt_Manager.Classes
             if (!Utilities.IsConnectedToInternet()) return;
 
             List<Account> Updated = new List<Account>();
-            var Response = await PresenceClient.PostAsync(new RestRequest("v1/presence/users", Method.Post).AddJsonBody(new { userIds = UserIds }));
+            var Response = await PresenceClient.PostAsync((AccountManager.SelectedAccount ?? AccountManager.LastValidAccount)?.MakeRequest("v1/presence/users", Method.Post).AddJsonBody(new { userIds = UserIds }));
 
-            if (Response.IsSuccessful && JsonConvert.DeserializeObject(Response.Content) is JObject Data && Data.ContainsKey("userPresences"))
+            if (Response!= null && Response.IsSuccessful && JsonConvert.DeserializeObject(Response.Content) is JObject Data && Data.ContainsKey("userPresences"))
             {
                 foreach (var Presence in Data["userPresences"].ToObject<List<UserPresence>>())
                     if (AccountManager.AccountsList.FirstOrDefault(acc => acc.UserID == Presence.userId) is Account account)
@@ -46,9 +46,9 @@ namespace RBX_Alt_Manager.Classes
             if (!Utilities.IsConnectedToInternet()) return null;
 
             var Dict = new Dictionary<long, UserPresence>();
-            var Response = await PresenceClient.PostAsync(new RestRequest("v1/presence/users", Method.Post).AddJsonBody(new { userIds = UserIds }));
+            var Response = await PresenceClient.PostAsync((AccountManager.SelectedAccount ?? AccountManager.LastValidAccount)?.MakeRequest("v1/presence/users", Method.Post).AddJsonBody(new { userIds = UserIds }));
 
-            if (Response.IsSuccessful && JsonConvert.DeserializeObject(Response.Content) is JObject Data && Data.ContainsKey("userPresences"))
+            if (Response != null && Response.IsSuccessful && JsonConvert.DeserializeObject(Response.Content) is JObject Data && Data.ContainsKey("userPresences"))
             {
                 foreach (var Presence in Data["userPresences"].ToObject<List<UserPresence>>())
                     Dict.Add(Presence.userId, Presence);

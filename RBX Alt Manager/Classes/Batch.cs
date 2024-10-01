@@ -194,7 +194,7 @@ namespace RBX_Alt_Manager.Classes
             var Response = await ThumbnailAPI.ExecuteAsync(Request);
 
             if (!Response.IsSuccessful) {
-                Program.Logger.Error($"{Response.StatusCode} Asset Image request failed\nError: {Response.ErrorMessage}\nContent: {Response.Content}");
+                Program.Logger.Error($"[Batch::GetAssetImage] {Response.StatusCode} Asset Image request failed\nError: {Response.ErrorMessage}\nContent: {Response.Content}");
                 return "UNK"; // throw new HttpException($"{Response.StatusCode} Asset Image request failed\nError: {Response.ErrorMessage}");
                               }
 

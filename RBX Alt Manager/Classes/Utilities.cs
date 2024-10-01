@@ -24,12 +24,6 @@ using System.Windows.Forms;
 
 public static class Utilities
 {
-    [DllImport("user32.dll")]
-    public static extern bool PostMessage(IntPtr hWnd, UInt32 Msg, int wParam, int lParam);
-
-    [DllImport("wininet.dll")]
-    private extern static bool InternetGetConnectedState(out int Description, int ReservedValue);
-
     public static T Next<T>(this T src) where T : struct
     {
         if (!typeof(T).IsEnum) throw new ArgumentException(string.Format("Argument {0} is not an Enum", typeof(T).FullName));
@@ -295,14 +289,86 @@ public static Color Lerp(this Color s, Color t, float k)
         }
     }
 
+    public static IEnumerable<string> OpenAccountSelection(bool Multiple = true)
+    {
+        using Form form = new Form
+        {
+            Size = new Size(300, 400),
+            StartPosition = FormStartPosition.CenterScreen,
+            FormBorderStyle = FormBorderStyle.SizableToolWindow,
+            Text = "Select Account(s)"
+        };
+
+        ListBox AccountList = new ListBox()
+        {
+            Parent = form,
+            Dock = DockStyle.Fill,
+            SelectionMode = Multiple ? SelectionMode.MultiExtended : SelectionMode.One,
+            Font = new Font(form.Font.FontFamily.Name, form.Font.SizeInPoints * 1.5f),
+            Tag = "UseControlFont"
+        };
+
+        Button Ok = new Button()
+        {
+            Parent = form,
+            Dock = DockStyle.Bottom,
+            Text = "OK",
+            DialogResult = DialogResult.OK
+        };
+
+        Ok.Click += (s, e) => form.Close();
+
+        foreach (var account in AccountManager.AccountsList)
+            AccountList.Items.Add(account.Username);
+
+        form.AcceptButton = Ok;
+        form.Rescale();
+
+        if (form.ShowDialog() == DialogResult.OK)
+            return AccountList.SelectedItems.Cast<string>();
+
+        return new string[] { };
+    }
+
+    public static float GetScalingFactor() // https://stackoverflow.com/a/21450169
+    {
+        Graphics g = Graphics.FromHwnd(IntPtr.Zero);
+        IntPtr desktop = g.GetHdc();
+        int LogicalScreenHeight = Natives.GetDeviceCaps(desktop, 10 /* VERTES */);
+        int PhysicalScreenHeight = Natives.GetDeviceCaps(desktop, 117 /* DESKTOPVERTRES */);
+
+        return PhysicalScreenHeight / LogicalScreenHeight;
+    }
+
+    public static async Task<string> GetRegion()
+    {
+        try
+        {
+            using HttpClient Client = new HttpClient();
+            var Response = await Client.GetAsync("http://ip-api.com/json/");
+
+            if (Response.IsSuccessStatusCode)
+            {
+                JObject IPInfo = JObject.Parse(await Response.Content.ReadAsStringAsync());
+
+                if (IPInfo?["status"]?.Value<string>() == "success" && IPInfo.ContainsKey("countryCode"))
+                    return $"{IPInfo["countryCode"]}"; // No idea what roblox is checking, switching between countries sometimes doesn't log me out.
+            }
+        }
+        catch { } // Throw it away, just means internet isn't available, or site is down. Results in a crash if not in a try-catch block
+
+        return string.Empty;
+    }
+
     public static Color DarkenOrBrighten(this Color color, float Percent) => color.GetBrightness() < 0.5 ? ControlPaint.Light(color, Percent) : ControlPaint.Dark(color, Percent);
 
     public static double MapValue(double Input, double IL, double IH, double OL, double OH) => (Input - IL) / (IH - IL) * (OH - OL) + OL;
 
     private static readonly DateTime Epoch = new DateTime(1970, 1, 1);
 
-    public static bool IsConnectedToInternet() => InternetGetConnectedState(out int _, 0);
+    public static bool IsConnectedToInternet() => Natives.InternetGetConnectedState(out int _, 0);
 
+   
 }
 
 public static class ImageExtensions
